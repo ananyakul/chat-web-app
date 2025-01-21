@@ -1,0 +1,99 @@
+- Create a chat, when send messages, get response. 
+- one continuous chat remember.
+- create many chats and automatically saved.
+
+
+Backend Design:
+- DB Schema: columns and rows
+- text is called content
+TypedDict?!
+-------
+first design idea:
+Messages {
+  msg_id: str # chat_id + [uuid], primary
+  role: "user" | "assistant",
+  content: TEXT,
+  chat_id: ForeignKey(Chats.id),
+}
+
+Chats {
+  uuid: str,
+  chat_title: str,
+}
+
+# ex: get all messages for a chat:
+SELECT * from messages where chat_id = xxx.
+
+API - how your frontend talks to your backend
+(functions that your backend exposes)
+
+
+def add_message_to_chat(chat_id: str, new_user_message: ChatMsg) -> ChatMsg:
+"""
+Add the user message to the chat, send the whole chat to GPT, 
+get a new assistant message, add the new assistant message to the 
+chat (in DB) and finally, return the new assistant message. 
+"""
+
+def get_chat(chat_id: str) -> list[ChatMsg]:
+"""
+Return the list of messages in this chat.
+"""
+
+def list_chats() -> list[str]:
+"""
+Returns the list of chat ids. 
+"""
+
+def create_chat(first_chat_msg: ChatMsg) -> tuple[str, ChatMsg]:
+"""
+Returns the new chat_id, and the first response.
+First inserts a new entry in the Chats table, and then
+basically just calls add_message_to_chat. 
+"""
+
+
+### Frontend
+/
+chat_ids = list_chats()
+if user clicks on a chat in the sidebar:
+  redirect(ananyachat.com/chat/{chat_id})
+
+if user clicks new chat:
+  chat_id, response_msg = create_chat(new_msg)
+  redirect(ananyachat.com/chat/{chat_id})
+
+/chat/{chat_id}
+show this chat: get_chat(chat_id)
+if user sends a message in this chat:
+  response_msg = add_message_to_chat(chat_id, new_msg)
+  add response_msg to the frontend
+###
+
+Chats {
+  chat_id: str,
+  messages: JSON,
+}
+----
+DATABASE_URL = "postgresql://postgres@localhost:5432/chat_app"
+
+curl -X POST http://127.0.0.1:8000/create_chat \
+-H "Content-Type: application/json" \
+-d '{
+  "chat_title": "My Test Chat",
+  "first_message": { "role": "user", "text": "Hello, World!" }
+}'
+
+curl -X POST http://127.0.0.1:8000/add_message_to_chat/{chat_id} \
+-H "Content-Type: application/json" \
+-d '{
+  "role": "user",
+  "text": "How are you?"
+}'
+
+curl -X GET http://127.0.0.1:8000/get_chat/{chat_id}
+
+curl -X GET http://127.0.0.1:8000/list_chats
+
+curl -X DELETE http://127.0.0.1:8000/delete_chat/{chat_id}
+
