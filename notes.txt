@@ -97,3 +97,9 @@ curl -X GET http://127.0.0.1:8000/list_chats
 
 curl -X DELETE http://127.0.0.1:8000/delete_chat/{chat_id}
 
+curl -X POST http://127.0.0.1:8000/add_message_to_chat/e64e850f-1294-4df7-aff7-14d130aca125 \
+-H "Content-Type: application/json" \
+-d '{
+  "role": "user",
+  "text": "How are you?"
+}'
