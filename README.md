@@ -1,6 +1,10 @@
 
 SQL Command:
 
+``brew install postgresql``
+
+``brew services start postgresql``
+
 ``psql postgres``
 
 ``CREATE DATABASE chat_app;``
