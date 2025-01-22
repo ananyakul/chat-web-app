@@ -49,6 +49,14 @@ class ChatMsg(BaseModel):
 class NewChat(BaseModel):
     chat_title: str
     first_message: ChatMsg
+
+class ChatLists(BaseModel):
+    id: str
+    title: str
+    
+class ChatResponse(BaseModel):
+    title: str
+    messages: List[ChatMsg]
     
 # Helper functions go here
 def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
@@ -89,15 +97,15 @@ def create_chat(new_chat: NewChat, db: Session = Depends(get_db)):
 
     return chat_id, assistant_message
 
-@app.get("/list_chats", response_model=List[str])
+@app.get("/list_chats", response_model=List[ChatLists])
 def list_chats(db: Session = Depends(get_db)):
     """
     Return the list of chat IDs.
     """
     chats = db.query(Chats).all()
-    return [str(chat.chat_id) for chat in chats]
+    return [{"id": str(chat.chat_id), "title": chat.chat_title or "Untitled"} for chat in chats]
 
-@app.get("/get_chat/{chat_id}", response_model=List[ChatMsg])
+@app.get("/get_chat/{chat_id}", response_model=ChatResponse)
 def get_chat(chat_id: str, db: Session = Depends(get_db)):
     """
     Return the list of messages in a specific chat.
@@ -106,7 +114,10 @@ def get_chat(chat_id: str, db: Session = Depends(get_db)):
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    return chat.messages
+    return {
+        "title": chat.chat_title,
+        "messages": chat.messages,
+    }
 
 @app.post("/add_message_to_chat/{chat_id}", response_model=ChatMsg)
 def add_message_to_chat(chat_id: str, new_user_message: ChatMsg, db: Session = Depends(get_db)):
