@@ -198,7 +198,7 @@ async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    chat = response.get("data")
+    chat = response.data or []
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
