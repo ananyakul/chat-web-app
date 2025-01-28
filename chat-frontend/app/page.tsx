@@ -15,7 +15,7 @@ const Home = () => {
   // Fetch chat list
   const fetchChatList = async () => {
     try {
-      const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run//list_chats');
+      const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/list_chats');
       if (response.ok) {
         const data: Chat[] = await response.json();
         setChatList(data);
