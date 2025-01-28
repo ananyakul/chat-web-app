@@ -5,59 +5,46 @@ from typing import List, Tuple
 from sqlalchemy import Column, Integer, String, Text, JSON, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-import psycopg2
 # from transformers import AutoModelForCausalLM, AutoTokenizer
 import uuid
 import openai 
 import os
 from dotenv import load_dotenv
-from supabase import create_client
 
 # FastAPI related initilizations go here
 app = FastAPI()
 
-# Middleware portion
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React's URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# List type storage for messages go here
+# messages = []
 
 # Database related initilizations go here
-load_dotenv()
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-# database_url = os.environ.get("DATABASE_URL")
-# ssl_cert_path = os.environ.get("SSL_CERT_PATH")
-# engine = create_engine(database_url, connect_args={"sslrootcert": ssl_cert_path})
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# Base = declarative_base()
+database_url = os.environ.get("DATABASE_URL")
+engine = create_engine(database_url)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-# class Chats(Base):
-#     __tablename__ = "chats"
+class Chats(Base):
+    __tablename__ = "chats"
 
-#     chat_id = Column(String, primary_key=True, index=True)
-#     chat_title = Column(String, nullable=False)
-#     messages = Column(JSON, default=[])
+    chat_id = Column(String, primary_key=True, index=True)
+    chat_title = Column(String, nullable=False)
+    messages = Column(JSON, default=[])
 
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
-# def get_db():
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # LLM related initilizations go here
-
 # model_name = "distilgpt2"
 # tokenizer = AutoTokenizer.from_pretrained(model_name)
 # model = AutoModelForCausalLM.from_pretrained(model_name)
 
+load_dotenv()
 client = openai.OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY")
 )
@@ -127,7 +114,7 @@ def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: 
 
 # API endpoints go here
 @app.post("/create_chat", response_model=Tuple[str, ChatMsg])
-async def create_chat(new_chat: NewChat):
+def create_chat(new_chat: NewChat, db: Session = Depends(get_db)):
     """
     Create a new chat, save the first message, and get the assistant's response.
     """
@@ -140,70 +127,44 @@ async def create_chat(new_chat: NewChat):
     assistant_message = {"role": "assistant", "text": assistant_response}
 
     # Save the chat to the database
-    try:
-        response = (
-            supabase.table("chats")
-            .insert({
-                "chat_id": chat_id,
-                "chat_title": new_chat.chat_title,
-                "messages": [user_message, assistant_message]
-            })
-            .execute()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+    chat = Chats(chat_id=chat_id, chat_title=new_chat.chat_title, messages=[user_message, assistant_message])
+    db.add(chat)
+    db.commit()
+
     return chat_id, assistant_message
 
 @app.get("/list_chats", response_model=List[ChatLists])
-async def list_chats():
+def list_chats(db: Session = Depends(get_db)):
     """
     Return the list of chat IDs.
     """
-    try:
-        response = supabase.table("chats").select("chat_id, chat_title").execute()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    chats = response.data or []
-    return [{"id": chat["chat_id"], "title": chat.get("chat_title", "Untitled")} for chat in chats]
+    chats = db.query(Chats).all()
+    return [{"id": str(chat.chat_id), "title": chat.chat_title or "Untitled"} for chat in chats]
 
 @app.get("/get_chat/{chat_id}", response_model=ChatResponse)
-async def get_chat(chat_id: str):
+def get_chat(chat_id: str, db: Session = Depends(get_db)):
     """
     Return the list of messages in a specific chat.
     """
-    try:
-        response = supabase.table("chats").select("*").eq("chat_id", chat_id).execute()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    chat = response.data
+    chat = db.query(Chats).filter(Chats.chat_id == chat_id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    chat = chat[0]
     return {
-        "title": chat["chat_title"],
-        "messages": chat["messages"],
+        "title": chat.chat_title,
+        "messages": chat.messages,
     }
 
 @app.post("/add_message_to_chat/{chat_id}", response_model=ChatMsg)
-async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
+def add_message_to_chat(chat_id: str, new_user_message: ChatMsg, db: Session = Depends(get_db)):
     """
     Add a user message to a chat and get the assistant's response.
     """
-    try:
-        response = supabase.table("chats").select("messages").eq("chat_id", chat_id).execute()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    chat = response.get("data")
+    chat = db.query(Chats).filter(Chats.chat_id == chat_id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
 
     # Add the user's message
-    messages = chat[0]["messages"]
     user_message = {"role": new_user_message.role, "text": new_user_message.text}
 
     # Generate assistant's response using generate_reply helper function
@@ -211,27 +172,31 @@ async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
     assistant_message = {"role": "assistant", "text": assistant_response}
 
     # Add the user and assistant message to db  
-    updated_messages = messages + [user_message, assistant_message]
-    try: 
-        response = (
-            supabase.table("chats")
-            .update({"messages": updated_messages})
-            .eq("chat_id", chat_id)
-            .execute()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    chat.messages = chat.messages + [user_message, assistant_message]
+    db.commit()
 
     return assistant_message
 
 @app.delete("/delete_chat/{chat_id}")
-async def delete_chat(chat_id: str):
+def delete_chat(chat_id: str, db: Session = Depends(get_db)):
     """
     Delete a chat from the database.
     """
-    try:
-        response = supabase.table("chats").delete().eq("chat_id", chat_id).execute()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    chat = db.query(Chats).filter(Chats.chat_id == chat_id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    db.delete(chat)
+    db.commit()
 
     return {"detail": "Chat deleted successfully"}
+
+
+# Middleware portion
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React's URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

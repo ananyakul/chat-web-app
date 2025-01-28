@@ -15,7 +15,7 @@ const Home = () => {
   // Fetch chat list
   const fetchChatList = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/list_chats');
+      const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run//list_chats');
       if (response.ok) {
         const data: Chat[] = await response.json();
         setChatList(data);
@@ -33,7 +33,7 @@ const Home = () => {
 
   const deleteChat = async (chatId: string) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/delete_chat/${chatId}`, {
+      const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/delete_chat/${chatId}`, {
         method: 'DELETE',
       });
 
@@ -85,7 +85,7 @@ const Home = () => {
 
       {/* Landing Page */}
       <div style={styles.mainContent}>
-        <h1 style={styles.welcomeTitle}>Welcome to Ananya's Chat App</h1>
+        <h1 style={styles.welcomeTitle}>Welcome to Ananya&apos;s Chat App</h1>
         <p style={styles.instructions}>
           Select a chat from the sidebar or click ➕ to create a new one.
         </p>

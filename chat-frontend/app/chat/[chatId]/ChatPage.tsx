@@ -12,14 +12,13 @@ const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>('');
     const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
-    const [chatTitle, setChatTitle] = useState<string>('');
     const [currentChatTitle, setCurrentChatTitle] = useState<string>('');
     const router = useRouter();
     const chatId = params?.chatId;
 
     const fetchChatList = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:8000/list_chats');
+            const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/list_chats');
             if (response.ok) {
                 const data: { id: string; title: string }[] = await response.json();
                 setChatList(data);
@@ -34,7 +33,7 @@ const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
     const fetchMessages = async () => {
         if (!chatId) return;
         try {
-            const response = await fetch(`http://127.0.0.1:8000/get_chat/${chatId}`);
+            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/get_chat/${chatId}`);
             if (response.ok) {
                 const data: { title: string; messages: Message[] } = await response.json();
                 setMessages(data.messages);
@@ -47,40 +46,11 @@ const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
         }
     };
 
-    const createChat = async () => {
-        if (!chatTitle.trim()) return;
-
-        try {
-            const response = await fetch('http://127.0.0.1:8000/create_chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_title: chatTitle,
-                    first_message: { role: 'user', text: input },
-                }),
-            });
-
-            if (response.ok) {
-                const [newChatId, responseMessage]: [string, Message] = await response.json();
-                setMessages([{ role: 'user', text: input },responseMessage]);
-                setChatList((prev) => [...prev, { id: newChatId, title: chatTitle }]);
-                router.push(`/chat/${newChatId}`);
-            } else {
-                console.error('Failed to create chat');
-            }
-        } catch (error) {
-            console.error('Error creating chat:', error);
-        } finally {
-            setChatTitle('');
-            setInput('');
-        }
-    };
-
     const sendMessage = async () => {
         if (!input.trim() || !chatId) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/add_message_to_chat/${chatId}`, {
+            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/add_message_to_chat/${chatId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: 'user', text: input }),
@@ -101,7 +71,7 @@ const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
 
     const deleteChat = async (chatId: string) => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/delete_chat/${chatId}`, {
+            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/delete_chat/${chatId}`, {
                 method: 'DELETE',
             });
     
@@ -122,7 +92,7 @@ const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
     useEffect(() => {
         fetchChatList();
         fetchMessages();
-    }, [chatId]);
+    }, [chatId, fetchChatList, fetchMessages]);
 
     return (
         <div style={styles.container}>

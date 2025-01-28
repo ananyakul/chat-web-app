@@ -103,3 +103,5 @@ curl -X POST http://127.0.0.1:8000/add_message_to_chat/e64e850f-1294-4df7-aff7-1
   "role": "user",
   "text": "How are you?"
 }'
+
+DATABASE_URL="postgresql://ananyak@localhost:5432/chat_app"

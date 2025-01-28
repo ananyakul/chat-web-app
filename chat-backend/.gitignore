@@ -1,3 +1,4 @@
 # api key
 .env*
 chat_gpt.py
+certificates
