@@ -207,7 +207,7 @@ async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
     user_message = {"role": new_user_message.role, "text": new_user_message.text}
 
     # Generate assistant's response using generate_reply helper function
-    assistant_response = generate_reply(new_user_message.text, chat.messages)
+    assistant_response = generate_reply(new_user_message.text, messages)
     assistant_message = {"role": "assistant", "text": assistant_response}
 
     # Add the user and assistant message to db  
