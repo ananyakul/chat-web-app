@@ -1,7 +1,14 @@
+'use client';
+
+import { useRouter } from 'next/router';
 import ChatPageClient from './ChatPage';
 
-export default function ChatPage({ params }: { params: { chatId: string } }) {
-  const { chatId } = params; // chatId = params.chatId;
+export default function ChatPage() {
+  const router = useRouter()
+  const chatId = router.query.chatId;
+  if (typeof chatId !== "string") {
+    return <p>Error</p>
+  } 
 
-  return <ChatPageClient params={{ chatId }} />;
+  return <ChatPageClient chatId={chatId} />;
 }

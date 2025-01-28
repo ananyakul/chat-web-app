@@ -8,7 +8,7 @@ interface Message {
     text: string;
 }
 
-const ChatPage = ({ params }: { params: { chatId: string } }): JSX.Element => {
+const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>('');
     const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
