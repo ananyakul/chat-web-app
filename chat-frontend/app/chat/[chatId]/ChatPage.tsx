@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, JSX } from 'react';
+import { useState, useEffect, JSX, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Message {
@@ -16,7 +16,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const router = useRouter();
     const chatId = params?.chatId;
 
-    const fetchChatList = async () => {
+    const fetchChatList = useCallback(async () => {
         try {
             const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/list_chats');
             if (response.ok) {
@@ -28,9 +28,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         } catch (error) {
             console.error('Error fetching chat list:', error);
         }
-    };
+    }, []);
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         if (!chatId) return;
         try {
             const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/get_chat/${chatId}`);
@@ -44,9 +44,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         } catch (error) {
             console.error('Error fetching messages:', error);
         }
-    };
+    }, [chatId]);
 
-    const sendMessage = async () => {
+    const sendMessage = useCallback(async () => {
         if (!input.trim() || !chatId) return;
 
         try {
@@ -67,9 +67,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         } finally {
             setInput('');
         }
-    };
+    }, [chatId, input]);
 
-    const deleteChat = async (chatId: string) => {
+    const deleteChat = useCallback(async (chatId: string) => {
         try {
             const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/delete_chat/${chatId}`, {
                 method: 'DELETE',
@@ -86,7 +86,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         } catch (error) {
             console.error('Error deleting chat:', error);
         }
-    };
+    }, [params.chatId, router]);
     
 
     useEffect(() => {
