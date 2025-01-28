@@ -5,8 +5,11 @@ from typing import List, Tuple
 from sqlalchemy import Column, Integer, String, Text, JSON, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from transformers import AutoModelForCausalLM, AutoTokenizer
+# from transformers import AutoModelForCausalLM, AutoTokenizer
 import uuid
+import openai 
+import os
+from dotenv import load_dotenv
 
 # FastAPI related initilizations go here
 app = FastAPI()
@@ -15,8 +18,8 @@ app = FastAPI()
 # messages = []
 
 # Database related initilizations go here
-DATABASE_URL = "postgresql://ananyak@localhost:5432/chat_app"
-engine = create_engine(DATABASE_URL)
+database_url = os.environ.get("DATABASE_URL")
+engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -37,9 +40,15 @@ def get_db():
         db.close()
 
 # LLM related initilizations go here
-model_name = "distilgpt2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# model_name = "distilgpt2"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
+
+load_dotenv()
+client = openai.OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY")
+)
+
 
 # Request and Response Models
 class ChatMsg(BaseModel):
@@ -65,16 +74,43 @@ def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: 
     """
     if not chat_history:
         chat_history = []
-    user_messages = [msg['text'] for msg in chat_history if msg['role'] == 'user']
     
-    history = " ".join(user_messages)
-    truncated_history = history[-max_chars:]
-    prompt = f"{truncated_history} User: {input_text} Assistant:"
+    # Build the chat message history for the API
+    messages = [{"role": "system", "content": "You are a helpful assistant."}]
+    for msg in chat_history:
+        messages.append({"role": msg['role'], "content": msg['text']})
+    messages.append({"role": "user", "content": input_text})
     
-    input_ids = tokenizer.encode(prompt, return_tensors="pt", truncation=True, max_length=512)
-    output = model.generate(input_ids, max_length=150, num_return_sequences=1, pad_token_id=tokenizer.eos_token_id)
-    reply = tokenizer.decode(output[0], skip_special_tokens=True)
-    return reply.split("Assistant:")[-1].strip()
+    # Call OpenAI's chat completions endpoint
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages
+        )
+        
+        # Extract and return the assistant's reply
+        reply = response.choices[0].message.content
+        return str(reply)
+    
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+# def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
+#     """
+#     Generate a reply from the assistantusing the LLM model chosen.
+#     """
+#     if not chat_history:
+#         chat_history = []
+#     user_messages = [msg['text'] for msg in chat_history if msg['role'] == 'user']
+    
+#     history = " ".join(user_messages)
+#     truncated_history = history[-max_chars:]
+#     prompt = f"{truncated_history} User: {input_text} Assistant:"
+    
+#     input_ids = tokenizer.encode(prompt, return_tensors="pt", truncation=True, max_length=512)
+#     output = model.generate(input_ids, max_length=150, num_return_sequences=1, pad_token_id=tokenizer.eos_token_id)
+#     reply = tokenizer.decode(output[0], skip_special_tokens=True)
+#     return reply.split("Assistant:")[-1].strip()
 
 # API endpoints go here
 @app.post("/create_chat", response_model=Tuple[str, ChatMsg])
