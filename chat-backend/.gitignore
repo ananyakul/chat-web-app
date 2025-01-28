@@ -2,3 +2,4 @@
 .env*
 chat_gpt.py
 certificates
+main_old.py
