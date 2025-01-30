@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 const NewChatPage = () => {
     const [chatTitle, setChatTitle] = useState('');
     const [firstMessage, setFirstMessage] = useState('');
@@ -12,7 +14,7 @@ const NewChatPage = () => {
         if (!chatTitle.trim() || !firstMessage.trim()) return;
 
         try {
-            const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/create_chat', {
+            const response = await fetch(`${BACKEND_URL}/create_chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

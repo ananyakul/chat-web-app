@@ -8,6 +8,8 @@ interface Chat {
   title: string;
 }
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 const Home = () => {
   const [chatList, setChatList] = useState<Chat[]>([]);
   const router = useRouter();
@@ -15,7 +17,7 @@ const Home = () => {
   // Fetch chat list
   const fetchChatList = async () => {
     try {
-      const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/list_chats');
+      const response = await fetch(`${BACKEND_URL}/list_chats`);
       if (response.ok) {
         const data: Chat[] = await response.json();
         setChatList(data);
@@ -33,7 +35,7 @@ const Home = () => {
 
   const deleteChat = async (chatId: string) => {
     try {
-      const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/delete_chat/${chatId}`, {
+      const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
         method: 'DELETE',
       });
 

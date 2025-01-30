@@ -2,11 +2,14 @@
 
 import { useState, useEffect, JSX, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
     role: 'user' | 'assistant';
     text: string;
 }
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -18,7 +21,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
     const fetchChatList = useCallback(async () => {
         try {
-            const response = await fetch('https://anyak1729--chat-web-app-fastapi-app.modal.run/list_chats');
+            const response = await fetch(`${BACKEND_URL}/list_chats`);
             if (response.ok) {
                 const data: { id: string; title: string }[] = await response.json();
                 setChatList(data);
@@ -33,7 +36,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const fetchMessages = useCallback(async () => {
         if (!chatId) return;
         try {
-            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/get_chat/${chatId}`);
+            const response = await fetch(`${BACKEND_URL}/get_chat/${chatId}`);
             if (response.ok) {
                 const data: { title: string; messages: Message[] } = await response.json();
                 setMessages(data.messages);
@@ -50,7 +53,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         if (!input.trim() || !chatId) return;
 
         try {
-            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/add_message_to_chat/${chatId}`, {
+            const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: 'user', text: input }),
@@ -71,7 +74,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
     const deleteChat = useCallback(async (chatId: string) => {
         try {
-            const response = await fetch(`https://anyak1729--chat-web-app-fastapi-app.modal.run/delete_chat/${chatId}`, {
+            const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
                 method: 'DELETE',
             });
     
@@ -163,7 +166,8 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                                     backgroundColor: msg.role === 'user' ? '#808080' : '#808080',
                                 }}
                             >
-                                <strong>{msg.role === 'user' ? '👤 You:' : '🤖 Assistant:'}</strong> {msg.text}
+                                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                                {/* <strong>{msg.role === 'user' ? '👤 You:' : '🤖 Assistant:'}</strong> <ReactMarkdown>{msg.text}</ReactMarkdown> */}
                             </div>
                         ))
                     )}
