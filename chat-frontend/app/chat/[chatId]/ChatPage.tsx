@@ -4,6 +4,8 @@ import { useState, useEffect, JSX, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
+import { ClipLoader } from 'react-spinners';
+import { motion } from 'framer-motion';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -17,6 +19,8 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [input, setInput] = useState<string>('');
     const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
     const [currentChatTitle, setCurrentChatTitle] = useState<string>('');
+    const [loading, setLoading] = useState(false);
+    const [botTyping, setBotTyping] = useState(false);
     const router = useRouter();
     const chatId = params?.chatId;
 
@@ -37,6 +41,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const fetchMessages = useCallback(async () => {
         if (!chatId) return;
         try {
+            setLoading(true);
             const response = await fetch(`${BACKEND_URL}/get_chat/${chatId}`);
             if (response.ok) {
                 const data: { title: string; messages: Message[] } = await response.json();
@@ -47,11 +52,40 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
+        } finally {
+            setLoading(false);
         }
     }, [chatId]);
 
+    // const sendMessage = useCallback(async () => {
+    //     if (!input.trim() || !chatId) return;
+
+    //     try {
+    //         const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ role: 'user', text: input }),
+    //         });
+
+    //         if (response.ok) {
+    //             const responseMessage: Message = await response.json();
+    //             setMessages((prev) => [...prev, { role: 'user', text: input }, responseMessage]);
+    //         } else {
+    //             console.error('Failed to send message');
+    //         }
+    //     } catch (error) {
+    //         console.error('Error sending message:', error);
+    //     } finally {
+    //         setInput('');
+    //     }
+    // }, [chatId, input]);
+
     const sendMessage = useCallback(async () => {
         if (!input.trim() || !chatId) return;
+
+        setMessages((prev) => [...prev, { role: 'user', text: input }]);
+        setInput('');
+        setBotTyping(true); // ✅ Show "Bot is typing..."
 
         try {
             const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
@@ -62,14 +96,14 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
             if (response.ok) {
                 const responseMessage: Message = await response.json();
-                setMessages((prev) => [...prev, { role: 'user', text: input }, responseMessage]);
+                setMessages((prev) => [...prev, responseMessage]);
             } else {
                 console.error('Failed to send message');
             }
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {
-            setInput('');
+            setBotTyping(false);
         }
     }, [chatId, input]);
 
@@ -103,11 +137,11 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             <div style={styles.sidebar}>
                 <div style={styles.heading}>
                     <button style={styles.homeButton} onClick={() => router.push('/')}>
-                        <Image src="/logo.png" alt="Home Icon" width={24} height={24} />
+                        <Image src="/logo.png" alt="Logo" width={30} height={30} />
                     </button>
                     <span>Chats</span>
                     <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-                        ➕
+                        <Image src="/write-icon.png" alt="New Chat Icon" width={36} height={36} />
                     </button>
                 </div>
                 <div style={styles.chatList}>
@@ -155,11 +189,13 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             <div style={styles.chatContainer}>
                 <h2 style={styles.header}>{currentChatTitle || "Select a Chat"}</h2>
                 <div style={styles.chatBox}>
-                    {messages.length === 0 ? (
+                    {loading ? (
+                        <div style={styles.placeholder}>Loading messages...</div>
+                    ) : messages.length === 0 ? (
                         <div style={styles.placeholder}>No messages yet. Start chatting!</div>
                     ) : (
                         messages.map((msg, index) => (
-                            <div
+                            <motion.div
                                 key={index}
                                 style={{
                                     ...styles.message,
@@ -169,8 +205,27 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                             >
                                 <ReactMarkdown>{msg.text}</ReactMarkdown>
                                 {/* <strong>{msg.role === 'user' ? '👤 You:' : '🤖 Assistant:'}</strong> <ReactMarkdown>{msg.text}</ReactMarkdown> */}
-                            </div>
+                            </motion.div>
                         ))
+                    )}
+                    
+
+                    {botTyping && (
+                        <div style={styles.typingIndicator}>
+                            Assistant is typing
+                            <motion.span
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                            >.</motion.span>
+                            <motion.span
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                            >.</motion.span>
+                            <motion.span
+                                animate={{ opacity: [0, 1, 0] }}
+                                transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                            >.</motion.span>
+                    </div>
                     )}
                 </div>
                 <div style={styles.inputArea}>
@@ -270,6 +325,20 @@ const styles: { [key: string]: React.CSSProperties } = {
         padding: '5px',
         transition: 'color 0.2s ease',
       },
+      typingIndicator: {
+        backgroundColor: 'transparent',
+        color: '#aaa',
+        fontSize: '14px',
+        fontStyle: 'italic',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+        marginLeft: '10px',
+    },
+    loading: {
+        textAlign: 'center',
+        padding: '20px',
+    },
     userMessage: { alignSelf: 'flex-end', backgroundColor: '#e3f2fd', color: '#fff', textAlign: 'right' },
     botMessage: { alignSelf: 'flex-start', backgroundColor: '#e3f2fd', color: '#ddd', textAlign: 'left' },
     placeholder: { textAlign: 'center', color: '#aaa', fontStyle: 'italic', paddingTop: '50px' },
