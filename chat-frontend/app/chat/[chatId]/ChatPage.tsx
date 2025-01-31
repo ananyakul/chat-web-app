@@ -3,6 +3,7 @@
 import { useState, useEffect, JSX, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import Image from 'next/image';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -102,7 +103,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             <div style={styles.sidebar}>
                 <div style={styles.heading}>
                     <button style={styles.homeButton} onClick={() => router.push('/')}>
-                        🏠
+                        <Image src="/logo.png" alt="Home Icon" width={24} height={24} />
                     </button>
                     <span>Chats</span>
                     <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
