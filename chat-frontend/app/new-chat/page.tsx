@@ -2,16 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ClipLoader } from 'react-spinners';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const NewChatPage = () => {
     const [chatTitle, setChatTitle] = useState('');
     const [firstMessage, setFirstMessage] = useState('');
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const handleCreateChat = async () => {
         if (!chatTitle.trim() || !firstMessage.trim()) return;
+        setLoading(true);
 
         try {
             const response = await fetch(`${BACKEND_URL}/create_chat`, {
@@ -25,6 +28,7 @@ const NewChatPage = () => {
 
             if (!response.ok) {
                 console.error(`Failed to create chat. Status: ${response.status}`);
+                setLoading(false);
                 return;
             }
 
@@ -34,6 +38,7 @@ const NewChatPage = () => {
             router.push(`/chat/${newChatId}`);
         } catch (error) {
             console.error('Error creating chat:', error);
+            setLoading(false);
         }
     };
 
@@ -47,15 +52,17 @@ const NewChatPage = () => {
                     placeholder="Chat Title"
                     value={chatTitle}
                     onChange={(e) => setChatTitle(e.target.value)}
+                    disabled={loading}
                 />
                 <textarea
                     style={styles.textarea}
                     placeholder="First Message"
                     value={firstMessage}
                     onChange={(e) => setFirstMessage(e.target.value)}
+                    disabled={loading}
                 />
-                <button style={styles.button} onClick={handleCreateChat}>
-                    Create Chat
+                <button style={styles.button} onClick={handleCreateChat} disabled={loading}>
+                    {loading ? <ClipLoader color="#007bff" size={16} /> : "Create Chat"}
                 </button>
             </div>
         </div>
@@ -97,6 +104,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         border: '1px solid #444',
         outline: 'none',
         fontSize: '16px',
+        transition: 'opacity 0.3s ease',
     },
     textarea: {
         width: '100%',
@@ -109,12 +117,13 @@ const styles: { [key: string]: React.CSSProperties } = {
         outline: 'none',
         fontSize: '16px',
         resize: 'none',
+        transition: 'opacity 0.3s ease',
     },
     button: {
         width: '100%',
         padding: '12px',
         borderRadius: '6px',
-        backgroundColor: '#007bff',
+        backgroundColor: '#1e40af',
         color: '#fff',
         fontSize: '16px',
         fontWeight: 'bold',
@@ -124,6 +133,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     buttonHover: {
         backgroundColor: '#0056b3',
+    },
+    buttonDisabled: {
+        backgroundColor: '#555',
+        cursor: 'not-allowed',
     },
 };
 

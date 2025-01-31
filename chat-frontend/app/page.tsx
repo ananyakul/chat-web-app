@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { ClipLoader } from 'react-spinners';
 
 interface Chat {
   id: string;
@@ -12,10 +14,12 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const Home = () => {
   const [chatList, setChatList] = useState<Chat[]>([]);
+  const [loadingChatList, setLoadingChatList] = useState(true);
   const router = useRouter();
 
   // Fetch chat list
   const fetchChatList = async () => {
+    setLoadingChatList(true);
     try {
       const response = await fetch(`${BACKEND_URL}/list_chats`);
       if (response.ok) {
@@ -26,6 +30,8 @@ const Home = () => {
       }
     } catch (error) {
       console.error('Error fetching chat list:', error);
+    } finally {
+      setLoadingChatList(false);
     }
   };
 
@@ -55,42 +61,60 @@ const Home = () => {
       <div style={styles.sidebar}>
         <div style={styles.heading}>
           <button style={styles.homeButton} onClick={() => router.push('/')}>
-            🏠
+            <Image src="/logo.png" alt="Logo" width={30} height={30} />
           </button>
           <span>Chats</span>
           <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-            ➕
+            <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} />
           </button>
         </div>
-        <div style={styles.chatList}>
-          {chatList.map((chat) => (
-            <div
-              key={chat.id}
-              style={{
-                ...styles.chatItemContainer,
-                backgroundColor: 'transparent',
-              }}
-            >
-              <div
-                style={styles.chatItem}
-                onClick={() => router.push(`/chat/${chat.id}`)}
-              >
-                {chat.title.length > 20 ? `${chat.title.slice(0, 20)}...` : chat.title}
+          {loadingChatList ? (
+              <div style={styles.loadingContainer}>
+                  <ClipLoader color="#007bff" size={20} />
+                  <span style={styles.loadingText}>Loading chats...</span>
               </div>
-              <button style={styles.deleteButton} onClick={() => deleteChat(chat.id)}>
-                🗑️
-              </button>
-            </div>
-          ))}
-        </div>
+                  ) : (
+          <div style={styles.chatList}>
+            {chatList.length === 0 ? (
+                            <div style={styles.placeholder}>No chats available.</div>
+                        ) : (
+            chatList.map((chat) => (
+              <div
+                key={chat.id}
+                style={{
+                  ...styles.chatItemContainer,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                <div
+                  style={styles.chatItem}
+                  onClick={() => router.push(`/chat/${chat.id}`)}
+                >
+                  {chat.title.length > 20 ? `${chat.title.slice(0, 20)}...` : chat.title}
+                </div>
+                <button style={styles.deleteButton} onClick={() => deleteChat(chat.id)}>
+                  <Image src="/trash-can.png" alt="Trash Icon" width={14} height={14} />
+                </button>
+              </div>
+            )))}
+          </div>
+        )}
       </div>
 
       {/* Landing Page */}
       <div style={styles.mainContent}>
-        <h1 style={styles.welcomeTitle}>Welcome to Ananya&apos;s Chat App</h1>
-        <p style={styles.instructions}>
-          Select a chat from the sidebar or click ➕ to create a new one.
-        </p>
+        <h1 style={styles.welcomeTitle}>Welcome to Ananya&apos;s Chat App
+          <span style={styles.iconWrapper}>
+            <Image src="/logo.png" alt="Logo Icon" width={30} height={30} />
+          </span>  
+        </h1>
+        <div style={styles.instructions}>
+          Select a chat from the sidebar or click  
+            <span style={styles.iconWrapper}>
+              <Image src="/write-icon-white.png" alt="New Chat Icon" width={20} height={20} />
+            </span>  
+           to create a new one.
+        </div>
       </div>
     </div>
   );
@@ -107,7 +131,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   sidebar: {
     width: '25%',
     borderRight: '1px solid #ddd',
-    padding: '10px',
     backgroundColor: '#222',
   },
   heading: {
@@ -115,7 +138,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '5px',
-    backgroundColor: '#007bff',
+    backgroundColor: '#1e40af',
     color: '#fff',
     fontSize: '18px',
     fontWeight: 'bold',
@@ -172,12 +195,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     backgroundColor: '#121212',
   },
   welcomeTitle: {
-    fontSize: '24px',
-    marginBottom: '20px',
+      fontSize: '28px',
+      fontWeight: 'bold',
+      color: '#ddd',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
   },
   instructions: {
-    fontSize: '16px',
-    color: '#bbb',
+      fontSize: '16px',
+      color: '#aaa',
+      maxWidth: '60%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
   },
   homeButton: {
     backgroundColor: 'transparent',
@@ -187,7 +218,26 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '18px',
     padding: '5px',
     transition: 'color 0.2s ease',
-  }
+  },
+  loadingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    color: '#aaa',
+  },
+  loadingText: {
+      marginTop: '10px',
+      fontSize: '14px',
+      fontStyle: 'italic',
+      color: '#aaa',
+  },
+  iconWrapper: {
+      display: 'inline-flex',
+      alignItems: 'center',
+
+  },
 };
 
 export default Home;

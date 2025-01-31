@@ -20,11 +20,20 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
     const [currentChatTitle, setCurrentChatTitle] = useState<string>('');
     const [loading, setLoading] = useState(false);
+    const [loadingChatList, setLoadingChatList] = useState(true);
     const [botTyping, setBotTyping] = useState(false);
+    // const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
     const chatId = params?.chatId;
 
+    // useEffect(() => {
+    //     if (messagesEndRef.current) {
+    //         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    //     }
+    // }, [messages, botTyping]);
+
     const fetchChatList = useCallback(async () => {
+        setLoadingChatList(true);
         try {
             const response = await fetch(`${BACKEND_URL}/list_chats`);
             if (response.ok) {
@@ -35,6 +44,8 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             }
         } catch (error) {
             console.error('Error fetching chat list:', error);
+        } finally {
+            setLoadingChatList(false);
         }
     }, []);
 
@@ -85,7 +96,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
         setMessages((prev) => [...prev, { role: 'user', text: input }]);
         setInput('');
-        setBotTyping(true); // ✅ Show "Bot is typing..."
+        setBotTyping(true);
 
         try {
             const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
@@ -141,11 +152,20 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                     </button>
                     <span>Chats</span>
                     <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-                        <Image src="/write-icon.png" alt="New Chat Icon" width={36} height={36} />
+                        <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} />
                     </button>
                 </div>
+                    {loadingChatList ? (
+                        <div style={styles.loadingContainer}>
+                            <ClipLoader color="#007bff" size={20} />
+                            <span style={styles.loadingText}>Loading chats...</span>
+                        </div>
+                ) : (
                 <div style={styles.chatList}>
-                    {chatList.map((chat) => (
+                    {chatList.length === 0 ? (
+                            <div style={styles.placeholder}>No chats available.</div>
+                        ) : (
+                    chatList.map((chat) => (
                         <div key={chat.id} 
                         style={{
                             ...styles.chatItemContainer,
@@ -160,11 +180,13 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                                 {chat.title.length > 20 ? `${chat.title.slice(0, 20)}...` : chat.title}
                             </div>
                             <button style={styles.deleteButton} onClick={() => deleteChat(chat.id)}>
-                                🗑️
+                                <Image src="/trash-can.png" alt="Trash Icon" width={14} height={14} />
                             </button>
                         </div>
-                    ))}
+                    )))}
                 </div>
+                )}
+                
                 {/* <div style={styles.newChat}>
                     <input
                         style={styles.input}
@@ -190,7 +212,10 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                 <h2 style={styles.header}>{currentChatTitle || "Select a Chat"}</h2>
                 <div style={styles.chatBox}>
                     {loading ? (
-                        <div style={styles.placeholder}>Loading messages...</div>
+                        <div style={styles.loadingContainer}>
+                            <ClipLoader color="#007bff" size={30} />
+                        <span style={styles.loadingText}>Loading messages...</span>
+                    </div>
                     ) : messages.length === 0 ? (
                         <div style={styles.placeholder}>No messages yet. Start chatting!</div>
                     ) : (
@@ -227,6 +252,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                             >.</motion.span>
                     </div>
                     )}
+                    {/* <div ref={messagesEndRef} /> */}
                 </div>
                 <div style={styles.inputArea}>
                     <input
@@ -238,7 +264,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                         onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     />
                     <button style={styles.button} onClick={sendMessage}>
-                        🚀 Send
+                        Send Message
                     </button>
                 </div>
             </div>
@@ -248,9 +274,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
 const styles: { [key: string]: React.CSSProperties } = {
     container: { display: 'flex', height: '100vh', fontFamily: "'Roboto', sans-serif", color: '#fff', backgroundColor: '#1a1a1a' },
-    sidebar: { width: '25%', borderRight: '1px solid #ddd', padding: '10px', backgroundColor: '#222' },
-    header: { textAlign: 'center', padding: '10px', backgroundColor: '#007bff', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold' },
-    chatList: { overflowY: 'auto', maxHeight: 'calc(100vh - 80px)', padding: '5px' },
+    sidebar: { width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
+    header: { textAlign: 'center', padding: '15px', backgroundColor: '#1e40af', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
+    chatList: { overflowY: 'auto', maxHeight: '100vh', padding: '5px', height: '100%' },
     chatItemContainer: {
         display: 'flex',
         alignItems: 'center',
@@ -261,11 +287,10 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'background-color 0.2s ease',
     },
     chatItem: {
-        flex: 1,
-        color: '#ddd',
+        padding: '10px',
         cursor: 'pointer',
-        textAlign: 'left',
-        padding: '5px 0',
+        color: '#ddd',
+        transition: 'background-color 0.2s ease',
     },
     deleteButton: {
         marginLeft: '10px',
@@ -277,7 +302,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'color 0.2s ease',
     },
     newChat: { display: 'flex', marginTop: '10px' },
-    chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '10px', backgroundColor: '#121212' },
+    chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '0px', backgroundColor: '#121212' },
     chatBox: { flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' },
     message: {
       maxWidth: '70%',
@@ -287,6 +312,7 @@ const styles: { [key: string]: React.CSSProperties } = {
       lineHeight: '1.5',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       wordWrap: 'break-word',
+      margin: '8px 12px',
     },
     deleteButtonHover: {
         color: '#ff6666',
@@ -296,11 +322,12 @@ const styles: { [key: string]: React.CSSProperties } = {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '5px',
-        backgroundColor: '#007bff',
+        backgroundColor: '#1e40af',
         color: '#fff',
         fontSize: '18px',
         fontWeight: 'bold',
         borderBottom: '1px solid #333',
+        width: '100%',    
     },
     plusButton: {
         backgroundColor: 'transparent',
@@ -324,8 +351,8 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '18px',
         padding: '5px',
         transition: 'color 0.2s ease',
-      },
-      typingIndicator: {
+    },
+    typingIndicator: {
         backgroundColor: 'transparent',
         color: '#aaa',
         fontSize: '14px',
@@ -333,18 +360,28 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         alignItems: 'center',
         gap: '2px',
-        marginLeft: '10px',
+        marginLeft: '15px',
     },
-    loading: {
-        textAlign: 'center',
-        padding: '20px',
+    loadingContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        color: '#aaa',
+    },
+    loadingText: {
+        marginTop: '10px',
+        fontSize: '14px',
+        fontStyle: 'italic',
+        color: '#aaa',
     },
     userMessage: { alignSelf: 'flex-end', backgroundColor: '#e3f2fd', color: '#fff', textAlign: 'right' },
     botMessage: { alignSelf: 'flex-start', backgroundColor: '#e3f2fd', color: '#ddd', textAlign: 'left' },
     placeholder: { textAlign: 'center', color: '#aaa', fontStyle: 'italic', paddingTop: '50px' },
     inputArea: { display: 'flex', padding: '10px', borderTop: '1px solid #333' },
     input: { flex: 1, padding: '10px', marginRight: '5px', borderRadius: '4px', backgroundColor: '#222', color: '#fff', border: '1px solid #444' },
-    button: { padding: '10px 20px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+    button: { padding: '10px 20px', backgroundColor: '#1e40af', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
 };
   
 
