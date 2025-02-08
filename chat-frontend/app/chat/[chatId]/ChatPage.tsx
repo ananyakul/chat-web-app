@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
 import { hover, motion } from 'framer-motion';
 import { Trash, ChatCircleDots, PaperPlaneTilt, PencilSimple } from "@phosphor-icons/react";
+import { Inter } from 'next/font/google';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -26,15 +27,8 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [hover, setHover] = useState(false);
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [renameInput, setRenameInput] = useState('');
-    // const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
     const chatId = params?.chatId;
-
-    // useEffect(() => {
-    //     if (messagesEndRef.current) {
-    //         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    //     }
-    // }, [messages, botTyping]);
 
     const fetchChatList = useCallback(async () => {
         setLoadingChatList(true);
@@ -71,29 +65,6 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             setLoading(false);
         }
     }, [chatId]);
-
-    // const sendMessage = useCallback(async () => {
-    //     if (!input.trim() || !chatId) return;
-
-    //     try {
-    //         const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({ role: 'user', text: input }),
-    //         });
-
-    //         if (response.ok) {
-    //             const responseMessage: Message = await response.json();
-    //             setMessages((prev) => [...prev, { role: 'user', text: input }, responseMessage]);
-    //         } else {
-    //             console.error('Failed to send message');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error sending message:', error);
-    //     } finally {
-    //         setInput('');
-    //     }
-    // }, [chatId, input]);
 
     const sendMessage = useCallback(async () => {
         if (!input.trim() || !chatId) return;
@@ -176,6 +147,13 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         fetchMessages();
     }, [chatId, fetchChatList, fetchMessages]);
 
+    useEffect(() => {
+        const chatBox = document.getElementById('chatBox');
+        if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }, [messages]);
+
     return (
         <div style={styles.container}>
             <div style={styles.sidebar}>
@@ -211,7 +189,13 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                                 justifyContent: 'space-between', // Distributes items evenly
                                 padding: '10px',
                             }} 
-                        onClick={() => router.push(`/chat/${chat.id}`)}>
+                        onClick={() => {router.push(`/chat/${chat.id}`)
+                            setTimeout(() => {
+                                const chatBox = document.getElementById('chatBox');
+                                if (chatBox) {
+                                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+                                }
+                            }, 100);}} >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         {editingChatId === chat.id ? (
                             <input 
@@ -254,31 +238,11 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                     )))}
                 </div>
                 )}
-                
-                {/* <div style={styles.newChat}>
-                    <input
-                        style={styles.input}
-                        type="text"
-                        placeholder="New chat title"
-                        value={chatTitle}
-                        onChange={(e) => setChatTitle(e.target.value)}
-                    />
-                    <input
-                        style={styles.input}
-                        type="text"
-                        placeholder="First message"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                    />
-                    <button style={styles.button} onClick={createChat}>
-                        ➕ Create
-                    </button>
-                </div> */}
             </div>
 
             <div style={styles.chatContainer}>
                 <h2 style={styles.header}>{currentChatTitle || "Select a Chat"}</h2>
-                <div style={styles.chatBox}>
+                <div id="chatBox" style={styles.chatBox}>
                     {loading ? (
                         <div style={styles.loadingContainer}>
                             <ClipLoader color="#007bff" size={30} />
@@ -293,7 +257,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                                 style={{
                                     ...styles.message,
                                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                    backgroundColor: msg.role === 'user' ? '#808080' : '#808080',
+                                    backgroundColor: msg.role === 'user' ? '#414141' : '#414141',
                                 }}
                             >
                                 <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -320,7 +284,6 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                             >.</motion.span>
                     </div>
                     )}
-                    {/* <div ref={messagesEndRef} /> */}
                 </div>
                 <div style={styles.inputArea}>
                     <textarea
@@ -359,9 +322,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-    container: { display: 'flex', height: '100vh', fontFamily: "'Roboto', sans-serif", color: '#fff', backgroundColor: '#3f3f3f' },
-    sidebar: { display: 'flex-column', width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
-    header: { textAlign: 'center', padding: '21px', backgroundColor: '#1e40af', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
+    container: { display: 'flex', height: '100vh', fontFamily: "'Inter', sans-serif", color: '#fff', backgroundColor: '#3f3f3f' },
+    sidebar: { overflowY: 'auto', display: 'flex', flexDirection: 'column', width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
+    header: { textAlign: 'center', padding: '21px', backgroundColor: '#818589', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
     chatList: { overflowY: 'auto', padding: '5px' },
     chatItemContainer: {
         display: 'flex',
@@ -391,7 +354,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'color 0.2s ease',
     },
     newChat: { display: 'flex', marginTop: '10px' },
-    chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '0px', backgroundColor: '#121212' },
+    chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '0px', backgroundColor: '#222' },
     chatBox: { flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', 
         flexDirection: 'column', gap: '10px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', 
         scrollSnapType: 'y proximity' },
@@ -413,13 +376,14 @@ const styles: { [key: string]: React.CSSProperties } = {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '13px',
-        backgroundColor: '#1e40af',
+        backgroundColor: '#818589',
         color: '#fff',
         fontSize: '18px',
         fontWeight: 'bold',
         borderBottom: '1px solid #333',
         width: '100%', 
-        margin: '0'  
+        margin: '0',
+        position: 'sticky' 
     },
     plusButton: {
         backgroundColor: 'transparent',
@@ -490,7 +454,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     },    
     button: { padding: '10px 20px', backgroundColor: '#1e40af', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
     sendButton: {
-        backgroundColor: '#1e40af',
+        backgroundColor: '#808080',
         border: 'none',
         borderRadius: '6px',
         padding: '10px',
@@ -503,7 +467,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'background-color 0.2s ease',
     },
     sendButtonHover: {
-        backgroundColor: '#162d75',
+        backgroundColor: '#414141',
     },
     renameInput: {
         padding: '5px',

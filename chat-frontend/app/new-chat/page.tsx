@@ -231,23 +231,25 @@ const styles: { [key: string]: React.CSSProperties } = {
     container: {
         display: 'flex',
         height: '100vh',
-        fontFamily: "'Roboto', sans-serif",
+        fontFamily: "'Inter', sans-serif",
         color: '#fff',
-        backgroundColor: '#121212',
+        backgroundColor: '#222',
     },
     sidebar: {
-        display: 'flex-column',
+        display: 'flex', 
+        flexDirection: 'column',
         width: '25%',
         borderRight: '1px solid #ddd',
         backgroundColor: '#222',
-        padding: '0px'
+        padding: '0px',
+        overflowY: 'auto'
     },
     heading: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '18px',
-        backgroundColor: '#1e40af',
+        backgroundColor: '#818589',
         color: '#fff',
         fontSize: '18px',
         fontWeight: 'bold',
@@ -272,7 +274,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#121212',
+        backgroundColor: '#222',
 
     },
     chatItemContainer: {
@@ -349,6 +351,30 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '14px',
         fontStyle: 'italic',
         color: '#aaa',
+    },
+    renameInput: {
+        padding: '5px',
+        fontSize: '14px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#000',
+        outline: 'none',
+        width: '80%',
+    },
+    renameButton: {
+        backgroundColor: 'transparent',
+        border: 'none',
+        color: '#ddd',
+        cursor: 'pointer',
+        fontSize: '16px',
+        padding: '5px',
+        transition: 'color 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    renameButtonHover: {
+        color: '#ccc',
     },
 };
 

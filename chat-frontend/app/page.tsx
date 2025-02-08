@@ -190,22 +190,24 @@ const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: 'flex',
     height: '100vh',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     color: '#fff',
-    backgroundColor: '#3f3f3f',
+    backgroundColor: '#222',
   },
   sidebar: {
-    display: 'flex-column',
     width: '25%',
     borderRight: '1px solid #ddd',
     backgroundColor: '#222',
+    overflowY: 'auto',
+    display: 'flex', 
+    flexDirection: 'column'
   },
   heading: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '13px',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#818589',
     color: '#fff',
     fontSize: '18px',
     fontWeight: 'bold',
@@ -236,11 +238,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     transition: 'background-color 0.2s ease',
   },
   chatItem: {
-    flex: 1,
-    color: '#ddd',
+    padding: '10px',
     cursor: 'pointer',
-    textAlign: 'left',
-    padding: '5px 0',
+    color: '#ddd',
+    transition: 'background-color 0.2s ease',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
   },
   deleteButton: {
     marginLeft: '10px',
@@ -258,7 +262,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#222',
   },
   welcomeTitle: {
       fontSize: '28px',
@@ -304,6 +308,30 @@ const styles: { [key: string]: React.CSSProperties } = {
       alignItems: 'center',
 
   },
+  renameInput: {
+    padding: '5px',
+    fontSize: '14px',
+    borderRadius: '4px',
+    border: '1px solid #ccc',
+    backgroundColor: '#fff',
+    color: '#000',
+    outline: 'none',
+    width: '80%',
+},
+renameButton: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#ddd',
+    cursor: 'pointer',
+    fontSize: '16px',
+    padding: '5px',
+    transition: 'color 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+},
+renameButtonHover: {
+    color: '#ccc',
+},
 };
 
 export default Home;
