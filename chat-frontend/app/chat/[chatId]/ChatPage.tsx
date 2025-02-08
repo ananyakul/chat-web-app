@@ -452,7 +452,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         lineHeight: '1.5',
         outline: 'none',
     },    
-    button: { padding: '10px 20px', backgroundColor: '#1e40af', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+    button: { padding: '10px 20px', backgroundColor: '#808080', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
     sendButton: {
         backgroundColor: '#808080',
         border: 'none',

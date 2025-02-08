@@ -330,7 +330,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         width: '100%',
         padding: '14px',
         borderRadius: '6px',
-        backgroundColor: '#1e40af',
+        backgroundColor: '#818589',
         color: '#fff',
         fontSize: '16px',
         fontWeight: 'bold',
