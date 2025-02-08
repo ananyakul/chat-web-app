@@ -80,6 +80,9 @@ class ChatResponse(BaseModel):
     title: str
     messages: List[ChatMsg]
     
+class RenameChatRequest(BaseModel):
+    title: str 
+    
 # Helper functions go here
 def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
     """
@@ -235,3 +238,25 @@ async def delete_chat(chat_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"detail": "Chat deleted successfully"}
+
+@app.put("/rename_chat/{chat_id}")
+async def rename_chat(chat_id: str, new_title: RenameChatRequest):
+    """
+    Rename a chat by updating its title in the database.
+    """
+    try:
+        # Update the chat title in Supabase
+        response = (
+            supabase.table("chats")
+            .update({"chat_title": new_title.title})
+            .eq("chat_id", chat_id)
+            .execute()
+        )
+
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Chat not found")
+
+        return {"detail": "Chat renamed successfully", "new_title": new_title.title}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

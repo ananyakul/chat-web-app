@@ -110,3 +110,9 @@ curl -X POST "https://anyak1729--chat-web-app-fastapi-app.modal.run/add_message_
   "role": "user",
   "text": "How are you?"
 }'
+
+
+----
+uvicorn main:app --reload
+modal deploy modal_app.primary
+npm run dev

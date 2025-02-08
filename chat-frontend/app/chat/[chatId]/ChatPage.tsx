@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
-import { motion } from 'framer-motion';
+import { hover, motion } from 'framer-motion';
+import { Trash, ChatCircleDots, PaperPlaneTilt, PencilSimple } from "@phosphor-icons/react";
 
 interface Message {
     role: 'user' | 'assistant';
@@ -22,6 +23,9 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [loading, setLoading] = useState(false);
     const [loadingChatList, setLoadingChatList] = useState(true);
     const [botTyping, setBotTyping] = useState(false);
+    const [hover, setHover] = useState(false);
+    const [editingChatId, setEditingChatId] = useState<string | null>(null);
+    const [renameInput, setRenameInput] = useState('');
     // const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
     const chatId = params?.chatId;
@@ -136,6 +140,35 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             console.error('Error deleting chat:', error);
         }
     }, [params.chatId, router]);
+
+    const handleRename = useCallback(async (chatId: string) => {
+        if (!renameInput.trim()) return; // Prevent empty names
+    
+        try {
+            const response = await fetch(`${BACKEND_URL}/rename_chat/${chatId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: renameInput }),
+            });
+    
+            const responseData = await response.json();
+            console.log('Rename API Response:', responseData);
+    
+            if (response.ok) {
+                setChatList((prev) =>
+                    prev.map((chat) =>
+                        chat.id === chatId ? { ...chat, title: renameInput } : chat
+                    )
+                );
+            } else {
+                console.error('Failed to rename chat:', response.status, responseData);
+            }
+        } catch (error) {
+            console.error('Error renaming chat:', error);
+        }
+    
+        setEditingChatId(null); // Exit edit mode
+    }, [renameInput, setChatList]);
     
 
     useEffect(() => {
@@ -152,7 +185,8 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                     </button>
                     <span>Chats</span>
                     <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-                        <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} />
+                        {/* <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} /> */}
+                        <ChatCircleDots size={32} color="#ffffff" weight="bold" />
                     </button>
                 </div>
                     {loadingChatList ? (
@@ -166,23 +200,57 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                             <div style={styles.placeholder}>No chats available.</div>
                         ) : (
                     chatList.map((chat) => (
-                        <div key={chat.id} 
-                        style={{
-                            ...styles.chatItemContainer,
-                            backgroundColor: chat.id === chatId ? '#333' : 'transparent',
-                        }} >
-                            <div
-                                key={chat.id}
-                                style={styles.chatItem}
-                                onClick={() => router.push(`/chat/${chat.id}`)}
-                            >
-                                {/* Chat names on sidebar */}
-                                {chat.title.length > 20 ? `${chat.title.slice(0, 20)}...` : chat.title}
-                            </div>
-                            <button style={styles.deleteButton} onClick={() => deleteChat(chat.id)}>
-                                <Image src="/trash-can.png" alt="Trash Icon" width={14} height={14} />
-                            </button>
-                        </div>
+                        <div 
+                            key={chat.id} 
+                            style={{
+                                ...styles.chatItemContainer,
+                                backgroundColor: chat.id === chatId ? '#333' : 'transparent',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between', // Distributes items evenly
+                                padding: '10px',
+                            }} 
+                        onClick={() => router.push(`/chat/${chat.id}`)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        {editingChatId === chat.id ? (
+                            <input 
+                                type="text"
+                                value={renameInput}
+                                onChange={(e) => setRenameInput(e.target.value)}
+                                onBlur={() => handleRename(chat.id)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleRename(chat.id)}
+                                style={styles.renameInput}
+                                autoFocus
+                            />
+                        ) : (
+                            <span style={styles.chatItem}>{chat.title}</span>
+                        )}
+
+                        {/* Rename Button (Edit Icon) */}
+                        <button 
+                            style={styles.renameButton} 
+                            onClick={(e) => {
+                                e.stopPropagation(); // Prevent navigation when clicking rename
+                                setEditingChatId(chat.id);
+                                setRenameInput(chat.title);
+                            }}
+                        >
+                            <PencilSimple size={24} color="#ffffff" />
+                        </button>
+                    </div>
+
+                {/* Delete Button */}
+                <button 
+                    style={styles.deleteButton} 
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent navigation when clicking delete
+                        deleteChat(chat.id);
+                    }}
+                >
+                    <Trash size={24} color="#ff0000" weight="fill" />
+                </button>
+            </div>
                     )))}
                 </div>
                 )}
@@ -255,16 +323,34 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                     {/* <div ref={messagesEndRef} /> */}
                 </div>
                 <div style={styles.inputArea}>
-                    <input
-                        style={styles.input}
-                        type="text"
+                    <textarea
+                        style={styles.textarea}
                         placeholder="Type a message..."
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                        rows={1}
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendMessage();
+                            }
+                        }}
                     />
-                    <button style={styles.button} onClick={sendMessage}>
-                        Send Message
+                    <button 
+                        style={{
+                            ...styles.sendButton,
+                            ...(hover ? styles.sendButtonHover : {}) // Apply hover style when hover state is true
+                        }}
+                        onMouseEnter={() => setHover(true)}
+                        onMouseLeave={() => setHover(false)}
+                        onClick={sendMessage}
+                    >
+                        {/* Send Message */}
+                        <PaperPlaneTilt size={32} color="#ffffff" weight="bold" />
                     </button>
                 </div>
             </div>
@@ -273,10 +359,10 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-    container: { display: 'flex', height: '100vh', fontFamily: "'Roboto', sans-serif", color: '#fff', backgroundColor: '#1a1a1a' },
-    sidebar: { width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
-    header: { textAlign: 'center', padding: '15px', backgroundColor: '#1e40af', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
-    chatList: { overflowY: 'auto', maxHeight: '100vh', padding: '5px', height: '100%' },
+    container: { display: 'flex', height: '100vh', fontFamily: "'Roboto', sans-serif", color: '#fff', backgroundColor: '#3f3f3f' },
+    sidebar: { display: 'flex-column', width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
+    header: { textAlign: 'center', padding: '21px', backgroundColor: '#1e40af', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
+    chatList: { overflowY: 'auto', padding: '5px' },
     chatItemContainer: {
         display: 'flex',
         alignItems: 'center',
@@ -291,6 +377,9 @@ const styles: { [key: string]: React.CSSProperties } = {
         cursor: 'pointer',
         color: '#ddd',
         transition: 'background-color 0.2s ease',
+        textOverflow: 'ellipsis',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
     },
     deleteButton: {
         marginLeft: '10px',
@@ -303,7 +392,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     newChat: { display: 'flex', marginTop: '10px' },
     chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '0px', backgroundColor: '#121212' },
-    chatBox: { flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' },
+    chatBox: { flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', 
+        flexDirection: 'column', gap: '10px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', 
+        scrollSnapType: 'y proximity' },
     message: {
       maxWidth: '70%',
       padding: '10px',
@@ -321,13 +412,14 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '5px',
+        padding: '13px',
         backgroundColor: '#1e40af',
         color: '#fff',
         fontSize: '18px',
         fontWeight: 'bold',
         borderBottom: '1px solid #333',
-        width: '100%',    
+        width: '100%', 
+        margin: '0'  
     },
     plusButton: {
         backgroundColor: 'transparent',
@@ -379,9 +471,64 @@ const styles: { [key: string]: React.CSSProperties } = {
     userMessage: { alignSelf: 'flex-end', backgroundColor: '#e3f2fd', color: '#fff', textAlign: 'right' },
     botMessage: { alignSelf: 'flex-start', backgroundColor: '#e3f2fd', color: '#ddd', textAlign: 'left' },
     placeholder: { textAlign: 'center', color: '#aaa', fontStyle: 'italic', paddingTop: '50px' },
-    inputArea: { display: 'flex', padding: '10px', borderTop: '1px solid #333' },
-    input: { flex: 1, padding: '10px', marginRight: '5px', borderRadius: '4px', backgroundColor: '#222', color: '#fff', border: '1px solid #444' },
+    inputArea: { position: 'sticky', gap: '10px',bottom: '0', display: 'flex', padding: '10px', borderTop: '1px solid #333', backgroundColor: '#222' },
+    // input: { flex: 1, padding: '10px', marginRight: '5px', borderRadius: '4px', backgroundColor: '#222', color: '#fff', border: '1px solid #444' },
+    textarea: {
+        flex: 1,
+        minHeight: '40px',
+        maxHeight: '150px',
+        padding: '10px',
+        borderRadius: '4px',
+        backgroundColor: '#222',
+        color: '#fff',
+        border: '1px solid #444',
+        resize: 'none',
+        overflowY: 'hidden',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        outline: 'none',
+    },    
     button: { padding: '10px 20px', backgroundColor: '#1e40af', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+    sendButton: {
+        backgroundColor: '#1e40af',
+        border: 'none',
+        borderRadius: '6px',
+        padding: '10px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '48px',
+        height: '48px',
+        transition: 'background-color 0.2s ease',
+    },
+    sendButtonHover: {
+        backgroundColor: '#162d75',
+    },
+    renameInput: {
+        padding: '5px',
+        fontSize: '14px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#000',
+        outline: 'none',
+        width: '80%',
+    },
+    renameButton: {
+        backgroundColor: 'transparent',
+        border: 'none',
+        color: '#ddd',
+        cursor: 'pointer',
+        fontSize: '16px',
+        padding: '5px',
+        transition: 'color 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    renameButtonHover: {
+        color: '#ccc',
+    },
 };
   
 

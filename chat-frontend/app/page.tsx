@@ -1,9 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
+import { Trash, ChatCircleDots, PencilSimple } from "@phosphor-icons/react";
 
 interface Chat {
   id: string;
@@ -15,45 +16,81 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const Home = () => {
   const [chatList, setChatList] = useState<Chat[]>([]);
   const [loadingChatList, setLoadingChatList] = useState(true);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
   const router = useRouter();
+  const params = useParams();
+  const chatId = params.chatId;
 
   // Fetch chat list
-  const fetchChatList = async () => {
+  const fetchChatList = useCallback(async () => {
     setLoadingChatList(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/list_chats`);
-      if (response.ok) {
-        const data: Chat[] = await response.json();
-        setChatList(data);
-      } else {
-        console.error('Failed to fetch chat list');
-      }
+        const response = await fetch(`${BACKEND_URL}/list_chats`);
+        if (response.ok) {
+            const data: { id: string; title: string }[] = await response.json();
+            setChatList(data);
+        } else {
+            console.error('Failed to fetch chat list');
+        }
     } catch (error) {
-      console.error('Error fetching chat list:', error);
+        console.error('Error fetching chat list:', error);
     } finally {
-      setLoadingChatList(false);
+        setLoadingChatList(false);
     }
-  };
+}, []);
 
   useEffect(() => {
     fetchChatList();
   }, []);
 
-  const deleteChat = async (chatId: string) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
-        method: 'DELETE',
-      });
+  const deleteChat = useCallback(async (chatId: string) => {
+      try {
+          const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
+              method: 'DELETE',
+          });
 
-      if (response.ok) {
-        setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
-      } else {
-        console.error(`Failed to delete chat. Status: ${response.status}`);
+          if (response.ok) {
+              setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
+              if (chatId === params.chatId) {
+                  router.push('/');
+              }
+          } else {
+              console.error(`Failed to delete chat. Status: ${response.status}`);
+          }
+      } catch (error) {
+          console.error('Error deleting chat:', error);
       }
+  }, [params.chatId, router]);
+
+  const handleRename = useCallback(async (chatId: string) => {
+    if (!renameInput.trim()) return; // Prevent empty names
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/rename_chat/${chatId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: renameInput }),
+        });
+
+        const responseData = await response.json();
+        console.log('Rename API Response:', responseData);
+
+        if (response.ok) {
+            setChatList((prev) =>
+                prev.map((chat) =>
+                    chat.id === chatId ? { ...chat, title: renameInput } : chat
+                )
+            );
+        } else {
+            console.error('Failed to rename chat:', response.status, responseData);
+        }
     } catch (error) {
-      console.error('Error deleting chat:', error);
+        console.error('Error renaming chat:', error);
     }
-  };
+
+    setEditingChatId(null); // Exit edit mode
+}, [renameInput, setChatList]);
 
   return (
     <div style={styles.container}>
@@ -65,7 +102,8 @@ const Home = () => {
           </button>
           <span>Chats</span>
           <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-            <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} />
+            {/* <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} /> */}
+            <ChatCircleDots size={32} color="#ffffff" weight="bold" />
           </button>
         </div>
           {loadingChatList ? (
@@ -83,17 +121,44 @@ const Home = () => {
                 key={chat.id}
                 style={{
                   ...styles.chatItemContainer,
-                  backgroundColor: 'transparent',
+                  backgroundColor: chat.id === chatId ? '#333' : 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between', // Distributes items evenly
+                  padding: '10px',
                 }}
-              >
-                <div
-                  style={styles.chatItem}
-                  onClick={() => router.push(`/chat/${chat.id}`)}
-                >
-                  {chat.title.length > 20 ? `${chat.title.slice(0, 20)}...` : chat.title}
+                onClick={() => router.push(`/chat/${chat.id}`)} >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                  {editingChatId === chat.id ? (
+                  <input 
+                      type="text"
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value)}
+                      onBlur={() => handleRename(chat.id)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleRename(chat.id)}
+                      style={styles.renameInput}
+                      autoFocus
+                  />
+                    ) : (
+                        <span style={styles.chatItem}>{chat.title}</span>
+                    )}
+
+                  {/* Rename Button (Edit Icon) */}
+                  <button 
+                      style={styles.renameButton} 
+                      onClick={(e) => {
+                          e.stopPropagation(); // Prevent navigation when clicking rename
+                          setEditingChatId(chat.id);
+                          setRenameInput(chat.title);
+                      }}
+                  >
+                      <PencilSimple size={24} color="#ffffff" />
+                  </button>
                 </div>
                 <button style={styles.deleteButton} onClick={() => deleteChat(chat.id)}>
-                  <Image src="/trash-can.png" alt="Trash Icon" width={14} height={14} />
+                  {/* <Image src="/trash-can.png" alt="Trash Icon" width={14} height={14} /> */}
+                  <Trash size={24} color="#ff0000" weight="fill" />
                 </button>
               </div>
             )))}
@@ -111,7 +176,8 @@ const Home = () => {
         <div style={styles.instructions}>
           Select a chat from the sidebar or click  
             <span style={styles.iconWrapper}>
-              <Image src="/write-icon-white.png" alt="New Chat Icon" width={20} height={20} />
+              {/* <Image src="/write-icon-white.png" alt="New Chat Icon" width={20} height={20} /> */}
+              <ChatCircleDots size={20} color="#ffffff" weight="bold" />
             </span>  
            to create a new one.
         </div>
@@ -126,9 +192,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     height: '100vh',
     fontFamily: "'Roboto', sans-serif",
     color: '#fff',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#3f3f3f',
   },
   sidebar: {
+    display: 'flex-column',
     width: '25%',
     borderRight: '1px solid #ddd',
     backgroundColor: '#222',
@@ -137,7 +204,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '5px',
+    padding: '13px',
     backgroundColor: '#1e40af',
     color: '#fff',
     fontSize: '18px',
@@ -157,7 +224,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   chatList: {
     overflowY: 'auto',
-    maxHeight: 'calc(100vh - 80px)',
     padding: '5px',
   },
   chatItemContainer: {
