@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
-import { hover, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Trash, ChatCircleDots, PaperPlaneTilt, PencilSimple } from "@phosphor-icons/react";
-import { Inter } from 'next/font/google';
 
 interface Message {
     role: 'user' | 'assistant';

@@ -20,10 +20,6 @@ const NewChatPage = () => {
     const params = useParams();
     const chatId = params.chatId;
 
-    useEffect(() => {
-        fetchChatList();
-    }, []);
-
     const fetchChatList = useCallback(async () => {
         setLoadingChatList(true);
         try {
@@ -40,6 +36,10 @@ const NewChatPage = () => {
             setLoadingChatList(false);
         }
     }, []);
+
+    useEffect(() => {
+        fetchChatList();
+    }, [fetchChatList]);
 
     const handleCreateChat = useCallback(async () => {
         if (!chatTitle.trim() || !firstMessage.trim()) return;

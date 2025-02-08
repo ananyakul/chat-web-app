@@ -42,7 +42,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchChatList();
-  }, []);
+  }, [fetchChatList]);
 
   const deleteChat = useCallback(async (chatId: string) => {
       try {
