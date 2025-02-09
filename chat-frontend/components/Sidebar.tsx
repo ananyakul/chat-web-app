@@ -11,35 +11,13 @@ import { useChatContext } from '@/context/ChatContext';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const Sidebar = () => {
-    // const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
-    // const [loadingChatList, setLoadingChatList] = useState(true);
+
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [renameInput, setRenameInput] = useState('');
     const router = useRouter();
     const params = useParams();
     const { chatList, fetchChatList, updateChatTitle, removeChat, loading } = useChatContext();
     const chatId = params.chatId;
-
-    // useEffect(() => {
-    //     const fetchChatList = async () => {
-    //         setLoadingChatList(true);
-    //         try {
-    //             const response = await fetch(`${BACKEND_URL}/list_chats`);
-    //             if (response.ok) {
-    //                 const data: { id: string; title: string }[] = await response.json();
-    //                 setChatList(data);
-    //             } else {
-    //                 console.error('Failed to fetch chat list');
-    //             }
-    //         } catch (error) {
-    //             console.error('Error fetching chat list:', error);
-    //         } finally {
-    //             setLoadingChatList(false);
-    //         }
-    //     };
-
-    //     fetchChatList();
-    // }, []);
 
     useEffect(() => {
         if (chatList.length === 0) {
@@ -54,7 +32,6 @@ const Sidebar = () => {
             });
 
             if (response.ok) {
-                // setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
                 removeChat(chatId);
                 if (chatId === params.chatId) {
                     router.push('/');
@@ -78,11 +55,6 @@ const Sidebar = () => {
             });
 
             if (response.ok) {
-                // setChatList((prev) =>
-                //     prev.map((chat) =>
-                //         chat.id === chatId ? { ...chat, title: renameInput } : chat
-                //     )
-                // );
                 updateChatTitle(chatId, renameInput);
                 setEditingChatId(null);
             } else {
@@ -102,7 +74,6 @@ const Sidebar = () => {
                     </button>
                     <span>Chats</span>
                     <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-                        {/* <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} /> */}
                         <ChatCircleDots size={32} color="#ffffff" weight="bold" />
                     </button>
                 </div>
@@ -144,29 +115,32 @@ const Sidebar = () => {
                             <span style={styles.chatItem}>{chat.title}</span>
                         )}
 
-                        {/* Rename Button (Edit Icon) */}
-                        <button 
-                            style={styles.renameButton} 
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent navigation when clicking rename
-                                setEditingChatId(chat.id);
-                                setRenameInput(chat.title);
-                            }}
-                        >
-                            <PencilSimple size={24} color="#ffffff" />
-                        </button>
+                        
                     </div>
 
-                {/* Delete Button */}
-                <button 
-                    style={styles.deleteButton} 
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent navigation when clicking delete
-                        deleteChat(chat.id);
-                    }}
-                >
-                    <Trash size={24} color="#ff0000" weight="fill" />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Rename Button (Edit Icon) */}
+                    <button 
+                        style={styles.renameButton} 
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent navigation when clicking rename
+                            setEditingChatId(chat.id);
+                            setRenameInput(chat.title);
+                        }}
+                    >
+                        <PencilSimple size={24} color="#ffffff" />
+                    </button>
+                    {/* Delete Button */}
+                    <button 
+                        style={styles.deleteButton} 
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent navigation when clicking delete
+                            deleteChat(chat.id);
+                        }}
+                    >
+                        <Trash size={24} color="#ff0000" weight="fill" />
+                    </button>
+                </div>
             </div>
                     )))}
                 </div>

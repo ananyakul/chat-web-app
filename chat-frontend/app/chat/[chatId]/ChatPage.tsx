@@ -17,30 +17,11 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>('');
-    // const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
     const [currentChatTitle, setCurrentChatTitle] = useState<string>('');
     const [loading, setLoading] = useState(false);
-    // const [loadingChatList, setLoadingChatList] = useState(true);
     const [botTyping, setBotTyping] = useState(false);
     const [hover, setHover] = useState(false);
     const chatId = params?.chatId;
-
-    // const fetchChatList = useCallback(async () => {
-    //     setLoadingChatList(true);
-    //     try {
-    //         const response = await fetch(`${BACKEND_URL}/list_chats`);
-    //         if (response.ok) {
-    //             const data: { id: string; title: string }[] = await response.json();
-    //             setChatList(data);
-    //         } else {
-    //             console.error('Failed to fetch chat list');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error fetching chat list:', error);
-    //     } finally {
-    //         setLoadingChatList(false);
-    //     }
-    // }, []);
 
     const fetchMessages = useCallback(async () => {
         if (!chatId) return;
