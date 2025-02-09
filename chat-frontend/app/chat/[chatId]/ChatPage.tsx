@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, JSX, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
-import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
 import { motion } from 'framer-motion';
-import { Trash, ChatCircleDots, PaperPlaneTilt, PencilSimple } from "@phosphor-icons/react";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
+import Sidebar from '@/components/Sidebar';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -24,9 +23,6 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [loadingChatList, setLoadingChatList] = useState(true);
     const [botTyping, setBotTyping] = useState(false);
     const [hover, setHover] = useState(false);
-    const [editingChatId, setEditingChatId] = useState<string | null>(null);
-    const [renameInput, setRenameInput] = useState('');
-    const router = useRouter();
     const chatId = params?.chatId;
 
     const fetchChatList = useCallback(async () => {
@@ -92,55 +88,6 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         }
     }, [chatId, input]);
 
-    const deleteChat = useCallback(async (chatId: string) => {
-        try {
-            const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
-                method: 'DELETE',
-            });
-    
-            if (response.ok) {
-                setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
-                if (chatId === params.chatId) {
-                    router.push('/');
-                }
-            } else {
-                console.error(`Failed to delete chat. Status: ${response.status}`);
-            }
-        } catch (error) {
-            console.error('Error deleting chat:', error);
-        }
-    }, [params.chatId, router]);
-
-    const handleRename = useCallback(async (chatId: string) => {
-        if (!renameInput.trim()) return; // Prevent empty names
-    
-        try {
-            const response = await fetch(`${BACKEND_URL}/rename_chat/${chatId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: renameInput }),
-            });
-    
-            const responseData = await response.json();
-            console.log('Rename API Response:', responseData);
-    
-            if (response.ok) {
-                setChatList((prev) =>
-                    prev.map((chat) =>
-                        chat.id === chatId ? { ...chat, title: renameInput } : chat
-                    )
-                );
-            } else {
-                console.error('Failed to rename chat:', response.status, responseData);
-            }
-        } catch (error) {
-            console.error('Error renaming chat:', error);
-        }
-    
-        setEditingChatId(null); // Exit edit mode
-    }, [renameInput, setChatList]);
-    
-
     useEffect(() => {
         fetchChatList();
         fetchMessages();
@@ -155,90 +102,10 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 
     return (
         <div style={styles.container}>
-            <div style={styles.sidebar}>
-                <div style={styles.heading}>
-                    <button style={styles.homeButton} onClick={() => router.push('/')}>
-                        <Image src="/logo.png" alt="Logo" width={30} height={30} />
-                    </button>
-                    <span>Chats</span>
-                    <button style={styles.plusButton} onClick={() => router.push('/new-chat')}>
-                        {/* <Image src="/write-icon-white.png" alt="New Chat Icon" width={36} height={36} /> */}
-                        <ChatCircleDots size={32} color="#ffffff" weight="bold" />
-                    </button>
-                </div>
-                    {loadingChatList ? (
-                        <div style={styles.loadingContainer}>
-                            <ClipLoader color="#007bff" size={20} />
-                            <span style={styles.loadingText}>Loading chats...</span>
-                        </div>
-                ) : (
-                <div style={styles.chatList}>
-                    {chatList.length === 0 ? (
-                            <div style={styles.placeholder}>No chats available.</div>
-                        ) : (
-                    chatList.map((chat) => (
-                        <div 
-                            key={chat.id} 
-                            style={{
-                                ...styles.chatItemContainer,
-                                backgroundColor: chat.id === chatId ? '#333' : 'transparent',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between', // Distributes items evenly
-                                padding: '10px',
-                            }} 
-                        onClick={() => {router.push(`/chat/${chat.id}`)
-                            setTimeout(() => {
-                                const chatBox = document.getElementById('chatBox');
-                                if (chatBox) {
-                                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
-                                }
-                            }, 100);}} >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                        {editingChatId === chat.id ? (
-                            <input 
-                                type="text"
-                                value={renameInput}
-                                onChange={(e) => setRenameInput(e.target.value)}
-                                onBlur={() => handleRename(chat.id)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleRename(chat.id)}
-                                style={styles.renameInput}
-                                autoFocus
-                            />
-                        ) : (
-                            <span style={styles.chatItem}>{chat.title}</span>
-                        )}
-
-                        {/* Rename Button (Edit Icon) */}
-                        <button 
-                            style={styles.renameButton} 
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent navigation when clicking rename
-                                setEditingChatId(chat.id);
-                                setRenameInput(chat.title);
-                            }}
-                        >
-                            <PencilSimple size={24} color="#ffffff" />
-                        </button>
-                    </div>
-
-                {/* Delete Button */}
-                <button 
-                    style={styles.deleteButton} 
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent navigation when clicking delete
-                        deleteChat(chat.id);
-                    }}
-                >
-                    <Trash size={24} color="#ff0000" weight="fill" />
-                </button>
-            </div>
-                    )))}
-                </div>
-                )}
-            </div>
-
+            {/* Sidebar */}
+            <Sidebar/>
+            
+            {/* Chat Page */}
             <div style={styles.chatContainer}>
                 <h2 style={styles.header}>{currentChatTitle || "Select a Chat"}</h2>
                 <div id="chatBox" style={styles.chatBox}>
@@ -260,12 +127,10 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                                 }}
                             >
                                 <ReactMarkdown>{msg.text}</ReactMarkdown>
-                                {/* <strong>{msg.role === 'user' ? '👤 You:' : '🤖 Assistant:'}</strong> <ReactMarkdown>{msg.text}</ReactMarkdown> */}
                             </motion.div>
                         ))
                     )}
-                    
-
+                    {/* Bot Typing UI */}
                     {botTyping && (
                         <div style={styles.typingIndicator}>
                             Assistant is typing
@@ -284,6 +149,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                     </div>
                     )}
                 </div>
+                {/* Text Box Area and Send Button */}
                 <div style={styles.inputArea}>
                     <textarea
                         style={styles.textarea}
@@ -311,8 +177,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                         onMouseLeave={() => setHover(false)}
                         onClick={sendMessage}
                     >
-                        {/* Send Message */}
-                        <PaperPlaneTilt size={32} color="#ffffff" weight="bold" />
+                        <PaperPlaneTilt size={20} color="#ffffff" weight="bold" />
                     </button>
                 </div>
             </div>
@@ -321,101 +186,39 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-    container: { display: 'flex', height: '100vh', fontFamily: "'Inter', sans-serif", color: '#fff', backgroundColor: '#3f3f3f' },
-    sidebar: { overflowY: 'auto', display: 'flex', flexDirection: 'column', width: '25%', borderRight: '1px solid #ddd', padding: '0px', backgroundColor: '#222' },
-    header: { textAlign: 'center', padding: '21px', backgroundColor: '#818589', color: '#fff', marginBottom: '0', fontSize: '18px', fontWeight: 'bold'},
-    chatList: { overflowY: 'auto', padding: '5px' },
-    chatItemContainer: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px',
-        borderBottom: '1px solid #333',
-        borderRadius: '4px',
-        transition: 'background-color 0.2s ease',
+    container: { 
+        display: 'flex', 
+        height: '100vh', 
+        fontFamily: "'Inter', sans-serif", 
+        color: '#fff', 
+        backgroundColor: '#3f3f3f' 
     },
-    chatItem: {
-        padding: '10px',
-        cursor: 'pointer',
-        color: '#ddd',
-        transition: 'background-color 0.2s ease',
-        textOverflow: 'ellipsis',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
+    header: { 
+        textAlign: 'center', 
+        padding: '21px', 
+        backgroundColor: '#222', 
+        color: '#fff', 
+        marginBottom: '0', 
+        fontSize: '18px', 
+        fontWeight: 'bold'
     },
-    deleteButton: {
-        marginLeft: '10px',
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: '#ff4d4f',
-        cursor: 'pointer',
-        fontSize: '16px',
-        transition: 'color 0.2s ease',
+    chatContainer: { 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        padding: '0px', 
+        backgroundColor: '#222' 
     },
-    newChat: { display: 'flex', marginTop: '10px' },
-    chatContainer: { flex: 1, display: 'flex', flexDirection: 'column', padding: '0px', backgroundColor: '#222' },
-    chatBox: { flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', 
-        flexDirection: 'column', gap: '10px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', 
-        scrollSnapType: 'y proximity' },
-    message: {
-      maxWidth: '70%',
-      padding: '10px',
-      borderRadius: '10px',
-      fontSize: '14px',
-      lineHeight: '1.5',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      wordWrap: 'break-word',
-      margin: '8px 12px',
-    },
-    deleteButtonHover: {
-        color: '#ff6666',
-    },
-    heading: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '13px',
-        backgroundColor: '#818589',
-        color: '#fff',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        borderBottom: '1px solid #333',
-        width: '100%', 
-        margin: '0',
-        position: 'sticky' 
-    },
-    plusButton: {
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: '#fff',
-        cursor: 'pointer',
-        fontSize: '20px',
-        fontWeight: 'bold',
-        padding: '5px',
-        margin: '0',
-        transition: 'color 0.2s ease',
-    },
-    plusButtonHover: {
-        color: '#ccc',
-    },
-    homeButton: {
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: '#fff',
-        cursor: 'pointer',
-        fontSize: '18px',
-        padding: '5px',
-        transition: 'color 0.2s ease',
-    },
-    typingIndicator: {
-        backgroundColor: 'transparent',
-        color: '#aaa',
-        fontSize: '14px',
-        fontStyle: 'italic',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '2px',
-        marginLeft: '15px',
+    chatBox: { 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '10px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '10px', 
+        WebkitOverflowScrolling: 'touch', 
+        overscrollBehavior: 'contain', 
+        scrollSnapType: 'y proximity' 
     },
     loadingContainer: {
         display: 'flex',
@@ -431,11 +234,41 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontStyle: 'italic',
         color: '#aaa',
     },
-    userMessage: { alignSelf: 'flex-end', backgroundColor: '#e3f2fd', color: '#fff', textAlign: 'right' },
-    botMessage: { alignSelf: 'flex-start', backgroundColor: '#e3f2fd', color: '#ddd', textAlign: 'left' },
-    placeholder: { textAlign: 'center', color: '#aaa', fontStyle: 'italic', paddingTop: '50px' },
-    inputArea: { position: 'sticky', gap: '10px',bottom: '0', display: 'flex', padding: '10px', borderTop: '1px solid #333', backgroundColor: '#222' },
-    // input: { flex: 1, padding: '10px', marginRight: '5px', borderRadius: '4px', backgroundColor: '#222', color: '#fff', border: '1px solid #444' },
+    placeholder: { 
+        textAlign: 'center', 
+        color: '#aaa', 
+        fontStyle: 'italic', 
+        paddingTop: '50px' 
+    },
+    message: {
+      maxWidth: '70%',
+      padding: '10px',
+      borderRadius: '10px',
+      fontSize: '14px',
+      lineHeight: '1.5',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      wordWrap: 'break-word',
+      margin: '8px 12px',
+    },
+    typingIndicator: {
+        backgroundColor: 'transparent',
+        color: '#aaa',
+        fontSize: '14px',
+        fontStyle: 'italic',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+        marginLeft: '15px',
+    },
+    inputArea: { 
+        position: 'sticky', 
+        gap: '10px',
+        bottom: '0', 
+        display: 'flex', 
+        padding: '10px', 
+        borderTop: '1px solid #333', 
+        backgroundColor: '#222' 
+    },
     textarea: {
         flex: 1,
         minHeight: '40px',
@@ -450,10 +283,9 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '14px',
         lineHeight: '1.5',
         outline: 'none',
-    },    
-    button: { padding: '10px 20px', backgroundColor: '#808080', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+    },
     sendButton: {
-        backgroundColor: '#808080',
+        backgroundColor: '#007FFF',
         border: 'none',
         borderRadius: '6px',
         padding: '10px',
@@ -462,37 +294,12 @@ const styles: { [key: string]: React.CSSProperties } = {
         alignItems: 'center',
         justifyContent: 'center',
         minWidth: '48px',
-        height: '48px',
+        height: '40px',
         transition: 'background-color 0.2s ease',
     },
     sendButtonHover: {
-        backgroundColor: '#414141',
-    },
-    renameInput: {
-        padding: '5px',
-        fontSize: '14px',
-        borderRadius: '4px',
-        border: '1px solid #ccc',
-        backgroundColor: '#fff',
-        color: '#000',
-        outline: 'none',
-        width: '80%',
-    },
-    renameButton: {
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: '#ddd',
-        cursor: 'pointer',
-        fontSize: '16px',
-        padding: '5px',
-        transition: 'color 0.2s ease',
-        display: 'flex',
-        alignItems: 'center',
-    },
-    renameButtonHover: {
-        color: '#ccc',
-    },
+        backgroundColor: '#1c39bb',
+    }
 };
-  
 
 export default ChatPage;
