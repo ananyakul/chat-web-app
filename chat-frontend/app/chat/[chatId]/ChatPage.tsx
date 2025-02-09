@@ -23,11 +23,18 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [hover, setHover] = useState(false);
     const chatId = params?.chatId;
 
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" };
+    };
+
     const fetchMessages = useCallback(async () => {
         if (!chatId) return;
         try {
             setLoading(true);
-            const response = await fetch(`${BACKEND_URL}/get_chat/${chatId}`);
+            const response = await fetch(`${BACKEND_URL}/get_chat/${chatId}`, {headers: getAuthHeaders(),});
             if (response.ok) {
                 const data: { title: string; messages: Message[] } = await response.json();
                 setMessages(data.messages);
@@ -52,7 +59,7 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
         try {
             const response = await fetch(`${BACKEND_URL}/add_message_to_chat/${chatId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ role: 'user', text: input }),
             });
 

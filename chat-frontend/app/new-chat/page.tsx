@@ -15,6 +15,13 @@ const NewChatPage = () => {
     const router = useRouter();
     const { addChat } = useChatContext();
 
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" };
+    };
+
     const handleCreateChat = useCallback(async () => {
         if (!chatTitle.trim() || !firstMessage.trim()) return;
         setLoading(true);
@@ -22,7 +29,7 @@ const NewChatPage = () => {
         try {
             const response = await fetch(`${BACKEND_URL}/create_chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({
                     chat_title: chatTitle,
                     first_message: { role: 'user', text: firstMessage },

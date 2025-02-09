@@ -1,5 +1,4 @@
 'use client';
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -26,11 +25,23 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [hasFetched, setHasFetched] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" }; // Exclude Authorization if token is missing
+    };
+      
+
     const fetchChatList = useCallback(async () => {
         if (hasFetched) return;
         setLoading(true);
         try {
-            const response = await fetch(`${BACKEND_URL}/list_chats`);
+            const response = await fetch(`${BACKEND_URL}/list_chats`, {
+                method: "GET",
+                headers: getAuthHeaders(),
+              });
+
             if (response.ok) {
                 const data: Chat[] = await response.json();
                 setChatList(data);

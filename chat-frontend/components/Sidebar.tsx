@@ -19,6 +19,13 @@ const Sidebar = () => {
     const { chatList, fetchChatList, updateChatTitle, removeChat, loading } = useChatContext();
     const chatId = params.chatId;
 
+    const getAuthHeaders = (): Record<string, string> => {
+        const token = localStorage.getItem("token");
+        return token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" };
+    };
+
     useEffect(() => {
         if (chatList.length === 0) {
             fetchChatList()
@@ -29,12 +36,13 @@ const Sidebar = () => {
         try {
             const response = await fetch(`${BACKEND_URL}/delete_chat/${chatId}`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(),
             });
 
             if (response.ok) {
                 removeChat(chatId);
                 if (chatId === params.chatId) {
-                    router.push('/');
+                    router.push('/dashboard');
                 }
             } else {
                 console.error(`Failed to delete chat. Status: ${response.status}`);
@@ -50,7 +58,7 @@ const Sidebar = () => {
         try {
             const response = await fetch(`${BACKEND_URL}/rename_chat/${chatId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ title: renameInput }),
             });
 
@@ -69,7 +77,7 @@ const Sidebar = () => {
     return (
         <div style={styles.sidebar}>
                 <div style={styles.heading}>
-                    <button style={styles.homeButton} onClick={() => router.push('/')}>
+                    <button style={styles.homeButton} onClick={() => router.push('/dashboard')}>
                         <Image src="/logo.png" alt="Logo" width={30} height={30} />
                     </button>
                     <span>Chats</span>

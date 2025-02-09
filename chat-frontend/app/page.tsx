@@ -1,29 +1,19 @@
-'use client';
-
+import Link from "next/link";
+import { FC } from "react";
 import Image from 'next/image';
-import { ChatCircleDots } from "@phosphor-icons/react";
-import Sidebar from '@/components/Sidebar';
 
-const Home = () => {
+const LandingPage: FC = () => {
   return (
     <div style={styles.container}>
-      {/* Sidebar */}
-      <Sidebar/>
-
-      {/* Landing Page */}
-      <div style={styles.mainContent}>
-        <h1 style={styles.welcomeTitle}>Welcome to Ananya&apos;s Chat App
-          <span style={styles.iconWrapper}>
-            <Image src="/logo.png" alt="Logo Icon" width={30} height={30} />
-          </span>  
-        </h1>
-        <div style={styles.instructions}>
-          Select a chat from the sidebar or click  
-            <span style={styles.iconWrapper}>
-              <ChatCircleDots size={20} color="#ffffff" weight="bold" />
-            </span>  
-           to create a new one.
-        </div>
+      <h1 style={styles.title}>Welcome to Ananya's Chat App
+        <span style={styles.iconWrapper}>
+              <Image src="/logo.png" alt="Logo Icon" width={35} height={35} />
+        </span> 
+      </h1>
+      <p style={styles.subtitle}>Begin by logging in if you already have an account, or sign up if you're new.</p>
+      <div style={styles.buttonContainer}>
+        <Link href="/login"><button style={styles.loginButton}>Login</button></Link>
+        <Link href="/signup"><button style={styles.signupButton}>Sign Up</button></Link>
       </div>
     </div>
   );
@@ -31,42 +21,59 @@ const Home = () => {
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    display: 'flex',
-    height: '100vh',
-    fontFamily: "'Inter', sans-serif",
-    color: '#fff',
-    backgroundColor: '#222',
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    backgroundColor: "#222",
   },
-  mainContent: {
-    flex: 1,
+  title: {
     display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
+    fontSize: "2rem",
+    fontWeight: "bold",
+    marginBottom: "1rem",
     alignItems: 'center',
-    textAlign: 'center',
-    backgroundColor: '#222',
+    gap: '10px',
   },
-  welcomeTitle: {
-      fontSize: '28px',
-      fontWeight: 'bold',
-      color: '#ddd',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
+  subtitle: {
+    fontSize: "1.2rem",
+    marginBottom: "1.5rem",
   },
-  instructions: {
-      fontSize: '16px',
-      color: '#aaa',
-      maxWidth: '60%',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
+  buttonContainer: {
+    display: "flex",
+    gap: "1rem",
+  },
+  loginButton: {
+    padding: "0.75rem 1.5rem",
+    fontSize: "1rem",
+    borderRadius: "8px",
+    color: "white",
+    cursor: "pointer",
+    border: "none",
+    backgroundColor: "#2563eb",
+  },
+  signupButton: {
+    padding: "0.75rem 1.5rem",
+    fontSize: "1rem",
+    borderRadius: "8px",
+    color: "white",
+    cursor: "pointer",
+    border: "none",
+    backgroundColor: "#10b981",
+  },
+  loginButtonHover: {
+    backgroundColor: "#1d4ed8",
+  },
+  signupButtonHover: {
+    backgroundColor: "#059669",
   },
   iconWrapper: {
-      display: 'inline-flex',
-      alignItems: 'center',
+    display: 'inline-flex',
+    alignItems: 'center',
 
-  },
-};
+  },  
+}
 
-export default Home;
+export default LandingPage;
+

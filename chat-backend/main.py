@@ -118,7 +118,7 @@ def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: 
     
     except Exception as e:
         return f"An error occurred: {e}"
-    
+
 def get_current_user(authorization: str = Header(None)):
     """
     Validate Supabase authentication token and return the user ID.
@@ -129,14 +129,16 @@ def get_current_user(authorization: str = Header(None)):
     token = authorization.replace("Bearer ", "")
     
     try:
-        user = supabase.auth.get_user(token)  # Fetch user details using token
-        if not user or "error" in user:
+        user_response = supabase.auth.get_user(token)
+
+        if not user_response or "error" in user_response:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-        return user.user  # Extract user details
+        user_data = user_response.user
+        return {"id": user_data.id} # Return user object
     
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Authentication failed: " + str(e))
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
 # def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
@@ -206,7 +208,7 @@ async def get_chat(chat_id: str, user=Depends(get_current_user)):
     Return the list of messages in a specific chat.
     """
     try:
-        response = supabase.table("chats").select("*").eq("chat_id", chat_id).execute()
+        response = supabase.table("chats").select("*").eq("chat_id", chat_id).eq("user_id", user["id"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -221,12 +223,12 @@ async def get_chat(chat_id: str, user=Depends(get_current_user)):
     }
 
 @app.post("/add_message_to_chat/{chat_id}", response_model=ChatMsg)
-async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
+async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg, user=Depends(get_current_user)):
     """
     Add a user message to a chat and get the assistant's response.
     """
     try:
-        response = supabase.table("chats").select("messages").eq("chat_id", chat_id).execute()
+        response = supabase.table("chats").select("messages").eq("chat_id", chat_id).eq("user_id", user["id"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -257,12 +259,12 @@ async def add_message_to_chat(chat_id: str, new_user_message: ChatMsg):
     return assistant_message
 
 @app.delete("/delete_chat/{chat_id}")
-async def delete_chat(chat_id: str):
+async def delete_chat(chat_id: str, user=Depends(get_current_user)):
     """
     Delete a chat from the database.
     """
     try:
-        response = supabase.table("chats").delete().eq("chat_id", chat_id).execute()
+        response = supabase.table("chats").delete().eq("chat_id", chat_id).eq("user_id", user["id"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -328,6 +330,20 @@ async def login(user: UserLogin):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/signout")
+async def signout():
+    """
+    Signs out the user by revoking the session in Supabase.
+    """
+    
+    try:
+        response = supabase.auth.sign_out()
+        return {"message": "Successfully signed out"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error signing out: {str(e)}")
+
 
 
 
