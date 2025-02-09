@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ClipLoader } from 'react-spinners';
 import Sidebar from '@/components/Sidebar';
+import { useChatContext } from '@/context/ChatContext';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -13,6 +14,7 @@ const NewChatPage = () => {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const params = useParams();
+    const { addChat } = useChatContext();
 
     const handleCreateChat = useCallback(async () => {
         if (!chatTitle.trim() || !firstMessage.trim()) return;
@@ -35,13 +37,14 @@ const NewChatPage = () => {
             }
 
             const [newChatId] = await response.json();
+            addChat({ id: newChatId, title: chatTitle });
             router.push(`/chat/${newChatId}`); // Redirect to new chat
         } catch (error) {
             console.error('Error creating chat:', error);
         } finally {
             setLoading(false);
         }
-    }, [chatTitle, firstMessage, router]);
+    }, [chatTitle, firstMessage, router, addChat]);
 
     return (
         <div style={styles.container}>

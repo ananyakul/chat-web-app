@@ -6,38 +6,46 @@ import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { ClipLoader } from 'react-spinners';
 import { ChatCircleDots, PencilSimple, Trash } from "@phosphor-icons/react";
+import { useChatContext } from '@/context/ChatContext';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const Sidebar = () => {
-    const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
+    // const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
     const [loadingChatList, setLoadingChatList] = useState(true);
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [renameInput, setRenameInput] = useState('');
     const router = useRouter();
     const params = useParams();
+    const { chatList, fetchChatList, updateChatTitle, removeChat, loading } = useChatContext();
     const chatId = params.chatId;
 
-    const fetchChatList = useCallback(async () => {
-        setLoadingChatList(true);
-        try {
-            const response = await fetch(`${BACKEND_URL}/list_chats`);
-            if (response.ok) {
-                const data: { id: string; title: string }[] = await response.json();
-                setChatList(data);
-            } else {
-                console.error('Failed to fetch chat list');
-            }
-        } catch (error) {
-            console.error('Error fetching chat list:', error);
-        } finally {
-            setLoadingChatList(false);
-        }
-    }, []);
+    // useEffect(() => {
+    //     const fetchChatList = async () => {
+    //         setLoadingChatList(true);
+    //         try {
+    //             const response = await fetch(`${BACKEND_URL}/list_chats`);
+    //             if (response.ok) {
+    //                 const data: { id: string; title: string }[] = await response.json();
+    //                 setChatList(data);
+    //             } else {
+    //                 console.error('Failed to fetch chat list');
+    //             }
+    //         } catch (error) {
+    //             console.error('Error fetching chat list:', error);
+    //         } finally {
+    //             setLoadingChatList(false);
+    //         }
+    //     };
+
+    //     fetchChatList();
+    // }, []);
 
     useEffect(() => {
-        fetchChatList();
-    }, [fetchChatList]);
+        if (chatList.length === 0) {
+            fetchChatList()
+        }
+    }, [fetchChatList, chatList]);
 
     const deleteChat = useCallback(async (chatId: string) => {
         try {
@@ -46,7 +54,8 @@ const Sidebar = () => {
             });
 
             if (response.ok) {
-                setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
+                // setChatList((prev) => prev.filter((chat) => chat.id !== chatId));
+                removeChat(chatId);
                 if (chatId === params.chatId) {
                     router.push('/');
                 }
@@ -56,7 +65,7 @@ const Sidebar = () => {
         } catch (error) {
             console.error('Error deleting chat:', error);
         }
-    }, [params.chatId, router]);
+    }, [params.chatId, router, removeChat]);
 
     const handleRename = useCallback(async (chatId: string) => {
         if (!renameInput.trim()) return;
@@ -69,11 +78,13 @@ const Sidebar = () => {
             });
 
             if (response.ok) {
-                setChatList((prev) =>
-                    prev.map((chat) =>
-                        chat.id === chatId ? { ...chat, title: renameInput } : chat
-                    )
-                );
+                // setChatList((prev) =>
+                //     prev.map((chat) =>
+                //         chat.id === chatId ? { ...chat, title: renameInput } : chat
+                //     )
+                // );
+                updateChatTitle(chatId, renameInput);
+                setEditingChatId(null);
             } else {
                 console.error('Failed to rename chat:', response.status);
             }
@@ -81,8 +92,7 @@ const Sidebar = () => {
             console.error('Error renaming chat:', error);
         }
 
-        setEditingChatId(null);
-    }, [renameInput]);
+    }, [renameInput, updateChatTitle]);
 
     return (
         <div style={styles.sidebar}>
@@ -96,7 +106,7 @@ const Sidebar = () => {
                         <ChatCircleDots size={32} color="#ffffff" weight="bold" />
                     </button>
                 </div>
-                    {loadingChatList ? (
+                    {loading ? (
                         <div style={styles.loadingContainer}>
                             <ClipLoader color="#007bff" size={20} />
                             <span style={styles.loadingText}>Loading chats...</span>
