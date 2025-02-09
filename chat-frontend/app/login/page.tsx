@@ -51,7 +51,7 @@ const LoginPage: FC = () => {
           <button type="submit" style={styles.loginButton}>Login</button>
         </form>
         {error && <p style={styles.error}>{error}</p>}
-        <p style={styles.text}>Don't have an account? <Link href="/signup" style={styles.link}>Sign Up</Link></p>
+        <p style={styles.text}>Don&apos;t have an account? <Link href="/signup" style={styles.link}>Sign Up</Link></p>
       </div>
     );
   };

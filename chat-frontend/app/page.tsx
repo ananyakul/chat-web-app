@@ -5,12 +5,12 @@ import Image from 'next/image';
 const LandingPage: FC = () => {
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Welcome to Ananya's Chat App
+      <h1 style={styles.title}>Welcome to Ananya&apos;s Chat App
         <span style={styles.iconWrapper}>
               <Image src="/logo.png" alt="Logo Icon" width={35} height={35} />
         </span> 
       </h1>
-      <p style={styles.subtitle}>Begin by logging in if you already have an account, or sign up if you're new.</p>
+      <p style={styles.subtitle}>Begin by logging in if you already have an account, or sign up if you&apos;re new.</p>
       <div style={styles.buttonContainer}>
         <Link href="/login"><button style={styles.loginButton}>Login</button></Link>
         <Link href="/signup"><button style={styles.signupButton}>Sign Up</button></Link>
