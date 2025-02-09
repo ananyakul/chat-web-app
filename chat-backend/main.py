@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Tuple
@@ -83,6 +83,14 @@ class ChatResponse(BaseModel):
 class RenameChatRequest(BaseModel):
     title: str 
     
+class UserSignup(BaseModel):
+    email: str
+    password: str
+    
+class UserLogin(BaseModel):
+    email: str
+    password: str
+    
 # Helper functions go here
 def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
     """
@@ -110,6 +118,26 @@ def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: 
     
     except Exception as e:
         return f"An error occurred: {e}"
+    
+def get_current_user(authorization: str = Header(None)):
+    """
+    Validate Supabase authentication token and return the user ID.
+    """
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization token missing")
+
+    token = authorization.replace("Bearer ", "")
+    
+    try:
+        user = supabase.auth.get_user(token)  # Fetch user details using token
+        if not user or "error" in user:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+        return user.user  # Extract user details
+    
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Authentication failed: " + str(e))
+
 
 # def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: int = 1000) -> str:
 #     """
@@ -130,7 +158,7 @@ def generate_reply(input_text: str, chat_history: List[dict] = None, max_chars: 
 
 # API endpoints go here
 @app.post("/create_chat", response_model=Tuple[str, ChatMsg])
-async def create_chat(new_chat: NewChat):
+async def create_chat(new_chat: NewChat, user=Depends(get_current_user)):
     """
     Create a new chat, save the first message, and get the assistant's response.
     """
@@ -149,7 +177,8 @@ async def create_chat(new_chat: NewChat):
             .insert({
                 "chat_id": chat_id,
                 "chat_title": new_chat.chat_title,
-                "messages": [user_message, assistant_message]
+                "messages": [user_message, assistant_message],
+                "user_id": user["id"]
             })
             .execute()
         )
@@ -159,12 +188,12 @@ async def create_chat(new_chat: NewChat):
     return chat_id, assistant_message
 
 @app.get("/list_chats", response_model=List[ChatLists])
-async def list_chats():
+async def list_chats(user=Depends(get_current_user)):
     """
     Return the list of chat IDs.
     """
     try:
-        response = supabase.table("chats").select("chat_id, chat_title").execute()
+        response = supabase.table("chats").select("chat_id, chat_title").eq("user_id", user["id"]).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -172,7 +201,7 @@ async def list_chats():
     return [{"id": chat["chat_id"], "title": chat.get("chat_title", "Untitled")} for chat in chats]
 
 @app.get("/get_chat/{chat_id}", response_model=ChatResponse)
-async def get_chat(chat_id: str):
+async def get_chat(chat_id: str, user=Depends(get_current_user)):
     """
     Return the list of messages in a specific chat.
     """
@@ -259,4 +288,46 @@ async def rename_chat(chat_id: str, new_title: RenameChatRequest):
         return {"detail": "Chat renamed successfully", "new_title": new_title.title}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+# User-related Methods
+@app.post("/signup")
+async def signup(user: UserSignup):
+    """
+    Sign up a new user with Supabase authentication.
+    """
+    try:
+        response = supabase.auth.sign_up({
+            "email": user.email,
+            "password": user.password
+        })
+
+        if "error" in response:
+            raise HTTPException(status_code=400, detail=response["error"]["message"])
+        
+        return {"message": "User created successfully. Please check your email to confirm your account."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/login")
+async def login(user: UserLogin):
+    """
+    Log in an existing user with Supabase authentication.
+    """
+    try:
+        response = supabase.auth.sign_in_with_password({
+            "email": user.email,
+            "password": user.password
+        })
+
+        if "error" in response:
+            raise HTTPException(status_code=400, detail=response["error"]["message"])
+        
+        return {"message": "Login successful", "session": response.session}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 

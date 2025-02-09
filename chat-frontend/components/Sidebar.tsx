@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const Sidebar = () => {
     // const [chatList, setChatList] = useState<{ id: string; title: string }[]>([]);
-    const [loadingChatList, setLoadingChatList] = useState(true);
+    // const [loadingChatList, setLoadingChatList] = useState(true);
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [renameInput, setRenameInput] = useState('');
     const router = useRouter();

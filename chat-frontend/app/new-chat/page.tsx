@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { ClipLoader } from 'react-spinners';
 import Sidebar from '@/components/Sidebar';
 import { useChatContext } from '@/context/ChatContext';
@@ -13,7 +13,6 @@ const NewChatPage = () => {
     const [firstMessage, setFirstMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const params = useParams();
     const { addChat } = useChatContext();
 
     const handleCreateChat = useCallback(async () => {
