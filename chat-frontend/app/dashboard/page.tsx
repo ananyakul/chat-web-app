@@ -1,11 +1,30 @@
-'use client';
-
+"use client";
 import Image from 'next/image';
 import { ChatCircleDots } from "@phosphor-icons/react";
 import Sidebar from '@/components/Sidebar';
 import SignOutButton from "@/components/SignOutButton";
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const Dashboard = () => {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      // console.error("No token found, redirecting to login.");
+      router.push("/login");
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [router]);
+
+  if (isAuthenticated === null) {
+    return <div style={styles.loading}>Checking authentication...</div>;
+  }
+
   return (
     <div style={styles.container}>
       {/* Sidebar */}
@@ -75,6 +94,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: 'absolute',
     top: '5px',
     right: '15px',
+  },
+  loading: {
+    color: "#fff",
+    textAlign: "center",
+    paddingTop: "50px",
+    fontSize: "18px",
   },
 };
 

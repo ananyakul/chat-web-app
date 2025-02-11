@@ -24,6 +24,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [chatList, setChatList] = useState<Chat[]>([]);
     const [hasFetched, setHasFetched] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
     const getAuthHeaders = (): Record<string, string> => {
         const token = localStorage.getItem("token");
@@ -34,7 +35,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       
 
     const fetchChatList = useCallback(async () => {
-        if (hasFetched) return;
+        if (!isAuthenticated || hasFetched) return;
         setLoading(true);
         try {
             const response = await fetch(`${BACKEND_URL}/list_chats`, {
