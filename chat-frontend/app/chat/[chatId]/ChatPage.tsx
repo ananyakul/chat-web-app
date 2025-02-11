@@ -6,6 +6,7 @@ import { ClipLoader } from 'react-spinners';
 import { motion } from 'framer-motion';
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import Sidebar from '@/components/Sidebar';
+import { useRouter } from 'next/navigation';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -21,17 +22,22 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     const [loading, setLoading] = useState(false);
     const [botTyping, setBotTyping] = useState(false);
     const [hover, setHover] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
+        return !!localStorage.getItem("token") ? true : null;
+    });
+    const [hasAccess, setHasAccess] = useState<boolean | null>(null);
     const chatId = params?.chatId;
+    const router = useRouter();
 
-    const getAuthHeaders = (): Record<string, string> => {
+    const getAuthHeaders = useCallback((): Record<string, string> => {
         const token = localStorage.getItem("token");
         return token
           ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
           : { "Content-Type": "application/json" };
-    };
+    }, []);
 
     const fetchMessages = useCallback(async () => {
-        if (!chatId) return;
+        if (!chatId || !isAuthenticated) return;
         try {
             setLoading(true);
             const response = await fetch(`${BACKEND_URL}/get_chat/${chatId}`, {headers: getAuthHeaders(),});
@@ -39,15 +45,18 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
                 const data: { title: string; messages: Message[] } = await response.json();
                 setMessages(data.messages);
                 setCurrentChatTitle(data.title);
+                setHasAccess(true);
             } else {
                 console.error('Failed to fetch messages');
+                setHasAccess(false);
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
+            setHasAccess(false);
         } finally {
             setLoading(false);
         }
-    }, [chatId]);
+    }, [chatId, isAuthenticated]);
 
     const sendMessage = useCallback(async () => {
         if (!input.trim() || !chatId) return;
@@ -77,8 +86,23 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
     }, [chatId, input]);
 
     useEffect(() => {
-        fetchMessages();
-    }, [chatId, fetchMessages]);
+        if (isAuthenticated !== null) return;
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setIsAuthenticated(false);
+            router.replace("/login"); // Redirect if not logged in
+            return;
+        }
+
+        setIsAuthenticated(true);
+    }, [router, isAuthenticated]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchMessages();
+        }
+    }, [isAuthenticated, fetchMessages, chatId]);
 
     useEffect(() => {
         const chatBox = document.getElementById('chatBox');
@@ -86,6 +110,15 @@ const ChatPage = (params: { chatId: string }): JSX.Element => {
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     }, [messages]);
+
+    if (isAuthenticated === null) {
+        return <div style={styles.loading}>Checking authentication...</div>;
+      }
+    
+      if (hasAccess === false) {
+        router.push("/dashboard");
+        return <div style={styles.loading}>Redirecting...</div>;
+      }
 
     return (
         <div style={styles.container}>
@@ -286,7 +319,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     sendButtonHover: {
         backgroundColor: '#1c39bb',
-    }
+    },
+    loading: {
+        color: "#222",
+        textAlign: "center",
+        paddingTop: "50px",
+        fontSize: "18px",
+    },
 };
 
 export default ChatPage;

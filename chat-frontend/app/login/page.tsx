@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -10,6 +10,21 @@ const LoginPage: FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [checkingAuth, setCheckingAuth] = useState(true);
+
+    useEffect(() => {
+      const token = localStorage.getItem("token");
+      if (token) {
+          console.log("User already logged in, redirecting...");
+          router.replace("/dashboard");
+      } else {
+          setCheckingAuth(false);
+      }
+  }, [router]);
+
+  if (checkingAuth) {
+    return <div style={styles.loading}>Checking authentication...</div>;
+  }
     
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -135,6 +150,12 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: "0.9rem",
         marginTop: "10px",
       },
+      loading: {
+        color: "#222",
+        textAlign: "center",
+        paddingTop: "50px",
+        fontSize: "18px",
+    },
   }
 
   export default LoginPage;

@@ -126,6 +126,7 @@ const SignupPage: FC = () => {
     link: {
         color: "#2563eb",
         cursor: "pointer",
+        textDecoration: "underline",
     },
     error: {
         color: "red",

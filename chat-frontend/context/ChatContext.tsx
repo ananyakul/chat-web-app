@@ -26,6 +26,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const token = localStorage.getItem("token");
+        setIsAuthenticated(!!token);
+    }, []);
+
     const getAuthHeaders = (): Record<string, string> => {
         const token = localStorage.getItem("token");
         return token
@@ -55,11 +61,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setLoading(false);
         }
-    }, [hasFetched]);
+    }, [isAuthenticated, hasFetched]);
 
     useEffect(() => {
-        fetchChatList();
-    }, [fetchChatList]);
+        if (isAuthenticated) {
+            fetchChatList();
+        }
+    }, [isAuthenticated, fetchChatList]);
 
     const addChat = (chat: Chat) => {
         setChatList((prev) => [...prev, chat]);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ClipLoader } from 'react-spinners';
 import Sidebar from '@/components/Sidebar';
@@ -14,16 +14,18 @@ const NewChatPage = () => {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { addChat } = useChatContext();
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-    const getAuthHeaders = (): Record<string, string> => {
+    const getAuthHeaders = useCallback((): Record<string, string> => {
         const token = localStorage.getItem("token");
         return token
           ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
           : { "Content-Type": "application/json" };
-    };
+    }, []);
 
     const handleCreateChat = useCallback(async () => {
-        if (!chatTitle.trim() || !firstMessage.trim()) return;
+        if (!chatTitle.trim() || !firstMessage.trim() || !isAuthenticated) return;
         setLoading(true);
 
         try {
@@ -51,6 +53,26 @@ const NewChatPage = () => {
             setLoading(false);
         }
     }, [chatTitle, firstMessage, router, addChat]);
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            // console.error("No token found, redirecting to login.");
+            setIsAuthenticated(false);
+            router.replace("/login");
+            return;
+        } else {
+            setIsAuthenticated(true);}
+        setIsCheckingAuth(false);
+    }, [router]);
+
+    if (isCheckingAuth) {
+        return <div style={styles.loading}>Checking authentication...</div>;
+    }
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
     return (
         <div style={styles.container}>
@@ -152,7 +174,13 @@ const styles: { [key: string]: React.CSSProperties } = {
         border: 'none',
         cursor: 'pointer',
         transition: 'background-color 0.2s ease',
-    }
+    },
+    loading: {
+        color: "#222",
+        textAlign: "center",
+        paddingTop: "50px",
+        fontSize: "18px",
+    },
 };
 
 export default NewChatPage;

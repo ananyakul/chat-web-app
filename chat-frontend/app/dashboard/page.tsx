@@ -15,7 +15,7 @@ const Dashboard = () => {
 
     if (!token) {
       // console.error("No token found, redirecting to login.");
-      router.push("/login");
+      router.replace("/login");
     } else {
       setIsAuthenticated(true);
     }
@@ -96,7 +96,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     right: '15px',
   },
   loading: {
-    color: "#fff",
+    color: "#222",
     textAlign: "center",
     paddingTop: "50px",
     fontSize: "18px",
